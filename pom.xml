@@ -4,9 +4,114 @@
 	<artifactId>plugin-loader</artifactId>
 	<version>0.0.1</version>
 
+	<name>plugin-loader</name>
+	<description>A java plugin loader.</description>
+	<url>https://github.com/fathzer/plugin-loader</url>
+
+	<scm>
+		<url>https://github.com/fathzer/plugin-loader.git</url>
+		<connection>https://github.com/fathzer/plugin-loader.git</connection>
+	</scm>
+
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+			<comments>A business-friendly OSS license</comments>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>Fathzer</id>
+			<name>Jean-Marc Astesana</name>
+			<email>admin@fathzer.com</email>
+		</developer>
+	</developers>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>8</maven.compiler.source>
 		<maven.compiler.target>8</maven.compiler.target>
+		<maven.compiler.source>8</maven.compiler.source>
+		<sonar.organization>fathzer</sonar.organization>
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	</properties>
+
+	<distributionManagement>
+		<repository>
+			<id>ReleaseFathzer</id>
+			<name>Release fathzer.com</name>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+		</repository>
+		<snapshotRepository>
+			<id>SnapshotFathzer</id>
+			<name>Snapshot fathzer.com</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<uniqueVersion>false</uniqueVersion>
+		</snapshotRepository>
+	</distributionManagement>
+	
+		<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<!-- JUnit 5 requires Surefire version 2.22.0 or higher -->
+				<version>2.22.2</version>
+			</plugin>
+			<plugin>
+				<groupId>org.kohsuke</groupId>
+				<artifactId>pgp-maven-plugin</artifactId>
+				<version>1.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<!-- For obvious security reasons, keyFile and pass phrase are not provided, 
+						they should be in file present in the user's home directory -->
+					<secretkey>keyfile:${user.home}/fathzer_private_key.asc</secretkey>
+					<passphrase>file:${user.home}/fathzer_key_pwd.txt</passphrase>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.2.1</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.3.1</version>
+				<configuration>
+					<header>${project.version}</header>
+					<footer>${project.version}</footer>
+					<excludePackageNames>com.fathzer.cvereporter.utils</excludePackageNames>
+				</configuration>
+				<executions>
+					<execution>
+						<id>javadoc_generation</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

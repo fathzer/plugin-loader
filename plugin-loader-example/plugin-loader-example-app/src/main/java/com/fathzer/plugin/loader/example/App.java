@@ -14,16 +14,21 @@ public class App {
 
 	public static void main(String[] args) {
 		final ClassNameBuilder builder = new ManifestAttributeClassNameBuilder(PLUGIN_CLASS_ATTRIBUTE);
-		List<PlugInContainer<AppPlugin>> greetings = JarPlugInContainer.getPlugins(new File("../plugin-loader-example-plugin/target"),AppPlugin.class,builder);
+		List<PlugInContainer<AppPlugin>> greetings = JarPlugInContainer.getPlugins(getPluginRepository(args),Integer.MAX_VALUE,AppPlugin.class,builder);
 		greetings.forEach(c -> {
+			final File file = ((JarPlugInContainer<AppPlugin>)c).getFile();
 			final AppPlugin p = c.get();
 			if (p==null) {
-				System.out.println("Unable to load plugin, error is ");
-				c.getInstanciationException().printStackTrace(System.out);
+				System.err.println("Unable to load plugin in file "+file+", error is "+c.getInstanciationException());
+			} else {
+				System.out.println("Found plugin "+p.getClass()+" in file "+file+". It returns "+p.getGreeting());
 			}
-			System.out.println(p.getClass()+": "+p.getGreeting());
 		});
 		System.out.println("done");
 		greetings.forEach(PlugInContainer::close);
+	}
+	
+	private static final File getPluginRepository(String[] args) {
+		return args.length!=0 ? new File(args[0]) : new File("");
 	}
 }

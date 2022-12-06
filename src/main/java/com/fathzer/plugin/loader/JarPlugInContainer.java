@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 public class JarPlugInContainer<T> implements PlugInContainer<T> {
 	private URLClassLoader loader;
+	private final File jarFile;
 	private T plugin;
 	private Throwable e;
 	
@@ -42,6 +43,7 @@ public class JarPlugInContainer<T> implements PlugInContainer<T> {
 	}
 	
 	public JarPlugInContainer (File file, Class<T> aClass, ClassNameBuilder classNameBuilder) {
+		this.jarFile = file;
 		try {
 			final String className = classNameBuilder.get(file, aClass);
 			this.loader = new URLClassLoader(new URL[]{file.toURI().toURL()});
@@ -52,9 +54,9 @@ public class JarPlugInContainer<T> implements PlugInContainer<T> {
 		}
 	}
 	
-	public static <T> List<PlugInContainer<T>> getPlugins(File folder, Class<T> aClass, ClassNameBuilder classNameBuilder) {
+	public static <T> List<PlugInContainer<T>> getPlugins(File folder, int depth, Class<T> aClass, ClassNameBuilder classNameBuilder) {
 		final List<PlugInContainer<T>> plugins = new ArrayList<>();
-	    try (Stream<Path> files = Files.find(folder.toPath(), Integer.MAX_VALUE, (p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().endsWith(".jar"))) {
+	    try (Stream<Path> files = Files.find(folder.toPath(), depth, (p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().endsWith(".jar"))) {
 			files.forEach(p -> plugins.add(new JarPlugInContainer<>(p.toFile(), aClass, classNameBuilder)));
 	    } catch (IOException e) {
 	    	throw new UncheckedIOException(e);
@@ -72,6 +74,10 @@ public class JarPlugInContainer<T> implements PlugInContainer<T> {
 		} else {
 			throw new IOException(className+" is not a "+aClass.getCanonicalName()+" instance");
 		}
+	}
+	
+	public File getFile() {
+		return jarFile;
 	}
 
 	@Override
