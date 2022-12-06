@@ -1,11 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>com.fathzer</groupId>
-		<artifactId>plugin-loader-shell</artifactId>
-		<version>0.0.1</version>
-	</parent>
+	<groupId>com.fathzer</groupId>
 	<artifactId>plugin-loader-example</artifactId>
+	<version>0.0.1</version>
 	<packaging>pom</packaging>
 
 	<modules>
@@ -13,6 +10,12 @@
 		<module>plugin-loader-example-plugin-api</module>
 		<module>plugin-loader-example-plugin</module>
 	</modules>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>8</maven.compiler.source>
+		<maven.compiler.target>8</maven.compiler.target>
+	</properties>
 
 	<build>
 		<pluginManagement>
