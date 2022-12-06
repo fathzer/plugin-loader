@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -48,7 +49,7 @@ public class JarPlugInContainer<T> implements PlugInContainer<T> {
 			final String className = classNameBuilder.get(file, aClass);
 			this.loader = new URLClassLoader(new URL[]{file.toURI().toURL()});
 			this.plugin = build(className, aClass);
-		} catch (Exception ex) {
+		} catch (IOException ex) {
 			this.e = ex;
 			close();
 		}
@@ -66,13 +67,17 @@ public class JarPlugInContainer<T> implements PlugInContainer<T> {
 
 	
 	@SuppressWarnings("unchecked")
-	private T build(String className, Class<T> aClass) throws Exception {
-		final Class<?> pluginClass = loader.loadClass(className);
-		if (aClass.isAssignableFrom(pluginClass)) {
-			Constructor<?> constructor = (Constructor<?>) pluginClass.getConstructor();
-			return (T) constructor.newInstance();
-		} else {
-			throw new IOException(className+" is not a "+aClass.getCanonicalName()+" instance");
+	private T build(String className, Class<T> aClass) throws IOException {
+		try {
+			final Class<?> pluginClass = loader.loadClass(className);
+			if (aClass.isAssignableFrom(pluginClass)) {
+				Constructor<?> constructor = pluginClass.getConstructor();
+				return (T) constructor.newInstance();
+			} else {
+				throw new IOException(className+" is not a "+aClass.getCanonicalName()+" instance");
+			}
+		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+			throw new IOException(ex);
 		}
 	}
 	
@@ -102,8 +107,8 @@ public class JarPlugInContainer<T> implements PlugInContainer<T> {
 		if (loader != null) {
 			try {
 				loader.close();
-			} catch (Exception e) {
-				throw new RuntimeException(e);
+			} catch (IOException ex) {
+				throw new UncheckedIOException(ex);
 			}
 			loader = null;
 		}
