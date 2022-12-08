@@ -23,5 +23,6 @@ public class ClassPathPlugInContainer<T> implements PlugInContainer<T> {
 
 	@Override
 	public void close() {
+		// Nothing to do
 	}
 }
