@@ -1,9 +1,11 @@
 package com.fathzer.plugin.loader;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -21,11 +23,11 @@ public class JarPluginLoader {
 	private InstanceBuilder instanceBuilder;
 
 	public interface ClassNameBuilder {
-		String get(File jarFile, Class<?> aClass) throws IOException;
+		String get(File jarFile, Class<?> aClass) throws PluginInstantiationException;
 	}
 
 	public interface InstanceBuilder {
-		<T> T get(Class<T> aClass) throws IOException;
+		<T> T get(Class<T> aClass) throws PluginInstantiationException;
 	}
 
 	public static class ManifestAttributeClassNameBuilder implements ClassNameBuilder {
@@ -36,13 +38,15 @@ public class JarPluginLoader {
 		}
 	
 		@Override
-		public String get(File file, Class<?> aClass) throws IOException {
+		public String get(File file, Class<?> aClass) throws PluginInstantiationException {
 			try (JarFile jar = new JarFile(file)) {
 				final String className = jar.getManifest().getMainAttributes().getValue(attrName);
 				if (className==null) {
-					throw new IOException("Unable to find "+attrName+" entry in jar manifest of "+file);
+					throw new PluginInstantiationException("Unable to find "+attrName+" entry in jar manifest of "+file);
 				}
 				return className;
+			} catch (IOException e) {
+				throw new PluginInstantiationException(e);
 			}
 		}
 	}
@@ -50,12 +54,12 @@ public class JarPluginLoader {
 	public static class DefaultInstanceBuilder implements InstanceBuilder {
 		@Override
 		@SuppressWarnings("unchecked")
-		public <T> T get(Class<T> pluginClass) throws IOException {
+		public <T> T get(Class<T> pluginClass) throws PluginInstantiationException {
 			try {
 				final Constructor<?> constructor = pluginClass.getConstructor();
 				return (T) constructor.newInstance();
 			} catch (ReflectiveOperationException | SecurityException  e) {
-				throw new IOException(e);
+				throw new PluginInstantiationException(e);
 			}
 		}
 	}
@@ -97,24 +101,34 @@ public class JarPluginLoader {
 			final URLClassLoader loader = new URLClassLoader(new URL[]{jarFile.toURI().toURL()});
 			final T plugin = build(loader, className, aClass);
 			return new JarPlugInContainer<>(jarFile, loader, plugin);
-		} catch (IOException ex) {
+		} catch (PluginInstantiationException ex) {
 			return new JarPlugInContainer<>(jarFile, ex);
+		} catch (MalformedURLException ex) {
+			return new JarPlugInContainer<>(jarFile, new PluginInstantiationException(ex));
 		}
 	}
 	
 	@SuppressWarnings("unchecked")
-	private <T> T build(URLClassLoader loader, String className, Class<T> aClass) throws IOException {
+	private <T> T build(URLClassLoader loader, String className, Class<T> aClass) throws PluginInstantiationException {
 		try {
 			final Class<?> pluginClass = loader.loadClass(className);
 			if (aClass.isAssignableFrom(pluginClass)) {
 				return instanceBuilder.get((Class<T>) pluginClass);
 			} else {
-				loader.close();
-				throw new IOException(className+" is not a "+aClass.getCanonicalName()+" instance");
+				tryToClose(loader);
+				throw new PluginInstantiationException(className+" is not a "+aClass.getCanonicalName()+" instance");
 			}
 		} catch (ClassNotFoundException ex) {
-			loader.close();
-			throw new IOException(ex);
+			tryToClose(loader);
+			throw new PluginInstantiationException(ex);
+		}
+	}
+	
+	private void tryToClose(Closeable closeable) {
+		try {
+			closeable.close();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 }

@@ -17,7 +17,7 @@ public class App {
 			final File file = ((JarPlugInContainer<AppPlugin>)c).getFile();
 			final AppPlugin p = c.get();
 			if (p==null) {
-				System.err.println("Unable to load plugin in file "+file+", error is "+c.getInstanciationException());
+				System.err.println("Unable to load plugin in file "+file+", error is "+c.getException());
 //				c.getInstanciationException().printStackTrace();
 			} else {
 				System.out.println("Found plugin "+p.getClass()+" in file "+file+". It returns "+p.getGreeting());

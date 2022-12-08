@@ -17,7 +17,7 @@ public class ClassPathPlugInContainer<T> implements PlugInContainer<T> {
 		return this.plugin.getClass().getCanonicalName();
 	}
 
-	public Throwable getInstanciationException() {
+	public PluginInstantiationException getException() {
 		return null;
 	}
 
