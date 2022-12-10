@@ -18,7 +18,7 @@ public class App {
 			final AppPlugin p = c.get();
 			if (p==null) {
 				System.err.println("Unable to load plugin in file "+file+", error is "+c.getException());
-//				c.getInstanciationException().printStackTrace();
+//				c.getException().printStackTrace();
 			} else {
 				System.out.println("Found plugin "+p.getClass()+" in file "+file+". It returns "+p.getGreeting());
 			}

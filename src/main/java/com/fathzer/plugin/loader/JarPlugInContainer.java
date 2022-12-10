@@ -36,7 +36,7 @@ public class JarPlugInContainer<T> implements PlugInContainer<T> {
 	
 	@Override
 	public String toString() {
-		return this.plugin.getClass().getCanonicalName();
+		return this.plugin==null ? this.e.toString() : this.plugin.getClass().getCanonicalName();
 	}
 
 	/** Gets the exception that occurred during the plugin instanciation.

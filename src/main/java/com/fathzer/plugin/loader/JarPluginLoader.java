@@ -67,7 +67,7 @@ public class JarPluginLoader {
 	public JarPluginLoader() {
 		this.classNameBuilder = new ManifestAttributeClassNameBuilder(DEFAULT_PLUGIN_CLASS_MANIFEST_ATTRIBUTE);
 		this.instanceBuilder = new DefaultInstanceBuilder();
-		this.depth = Integer.MAX_VALUE;
+		this.depth = 1;
 	}
 	
 	public JarPluginLoader withClassNameBuilder(ClassNameBuilder classNameBuilder) {
@@ -75,7 +75,17 @@ public class JarPluginLoader {
 		return this;
 	}
 
+	/** Sets the jar research depth.
+	 * @param depth The maximum number of directory levels to search.
+	 * The default value is 1. It means the search is limited to the jars directly under the searched folder.
+	 * To set no limit, you should set the depth to Integer.MAX_VALUE 
+	 * @return this modified instance
+	 * @throws IllegalArgumentException if depth &lt; 1
+	 */
 	public JarPluginLoader withDepth(int depth) {
+		if (depth<1) {
+			throw new IllegalArgumentException();
+		}
 		this.depth = depth;
 		return this;
 	}
