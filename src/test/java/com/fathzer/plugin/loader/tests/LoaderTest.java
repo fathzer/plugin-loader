@@ -3,24 +3,24 @@ package com.fathzer.plugin.loader.tests;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
+import com.fathzer.plugin.loader.ClassPathPlugInContainer;
 import com.fathzer.plugin.loader.JarPluginLoader;
 import com.fathzer.plugin.loader.JarPluginLoader.InstanceBuilder;
 import com.fathzer.plugin.loader.PlugInContainer;
-import com.fathzer.plugin.loader.PluginInstantiationException;
 
 class LoaderTest {
 
 	@Test
-	void test() {
+	void test() throws IOException {
 		// Verify it works in the standard way 
 		final File pluginsFolder = new File("src/test/resources");
 		JarPluginLoader loader = new JarPluginLoader();
@@ -28,6 +28,12 @@ class LoaderTest {
 		assertEquals(1, plugins.size());
 		assertTrue(isValid(plugins.get(0)));
 		assertEquals("com.fathzer.plugin.loader.test.Plugin",plugins.get(0).toString());
+		
+		// Test adding a ClassPath plugin
+		plugins.add(new ClassPathPlugInContainer<Supplier>(()->"Hello"));
+		assertEquals(2, plugins.size());
+		assertTrue(isValid(plugins.get(1)));
+		assertEquals("Hello",plugins.get(1).get().get());
 		
 		// Test depth + Invalid jar file (empty jar)
 		assertThrows(IllegalArgumentException.class, () -> loader.withDepth(0));
@@ -55,6 +61,12 @@ class LoaderTest {
 		assertTrue(isValid(plugins.get(0)));
 		assertEquals(param, plugins.get(0).get().get());
 		
+		// Test illegalArgument
+		loader.withInstanceBuilder(new OtherInstanceBuilder<String>(null, String.class));
+		plugins = loader.getPlugins(pluginsFolder, Supplier.class);
+		assertEquals(1, plugins.size());
+		assertFalse(isValid(plugins.get(0)));
+		
 		// Test class does not implement the plugin class
 		List<PlugInContainer<Function>> fplugins = loader.getPlugins(pluginsFolder, Function.class);
 		assertEquals(1, fplugins.size());
@@ -71,6 +83,9 @@ class LoaderTest {
 		plugins = loader.getPlugins(pluginsFolder, Supplier.class);
 		assertEquals(1, plugins.size());
 		assertFalse(isValid(plugins.get(0)));
+		
+		// Verify it sends IOException if folder does not exists
+		assertThrows (IOException.class, () -> loader.getPlugins(new File("unknown"), Supplier.class));
 	}
 	
 	private boolean isValid(PlugInContainer<?> container) {
@@ -83,24 +98,20 @@ class LoaderTest {
 		return isValid;
 	}
 
-	private static class OtherInstanceBuilder<T> implements InstanceBuilder {
-		private final T param;
-		private final Class<T> aClass;
+	private static class OtherInstanceBuilder<P> implements InstanceBuilder {
+		private final P param;
+		private final Class<P> aClass;
 
-		public OtherInstanceBuilder(T param, Class<T> aClass) {
+		public OtherInstanceBuilder(P param, Class<P> aClass) {
 			this.param = param;
 			this.aClass = aClass;
 		}
 		
 		@Override
 		@SuppressWarnings("unchecked")
-		public <T> T get(Class<T> pluginClass) throws PluginInstantiationException {
-			try {
-				final Constructor<?> constructor = pluginClass.getConstructor(aClass);
-				return (T) constructor.newInstance(param);
-			} catch (ReflectiveOperationException | SecurityException  e) {
-				throw new PluginInstantiationException(e);
-			}
+		public <T> T get(Class<T> pluginClass) throws Exception {
+			final Constructor<?> constructor = pluginClass.getConstructor(aClass);
+			return (T) constructor.newInstance(param);
 		}
 	}
 }

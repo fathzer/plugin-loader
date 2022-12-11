@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -23,11 +22,11 @@ public class JarPluginLoader {
 	private InstanceBuilder instanceBuilder;
 
 	public interface ClassNameBuilder {
-		String get(File jarFile, Class<?> aClass) throws PluginInstantiationException;
+		String get(File jarFile, Class<?> aClass) throws Exception;
 	}
 
 	public interface InstanceBuilder {
-		<T> T get(Class<T> aClass) throws PluginInstantiationException;
+		<T> T get(Class<T> aClass) throws Exception;
 	}
 
 	public static class ManifestAttributeClassNameBuilder implements ClassNameBuilder {
@@ -38,15 +37,13 @@ public class JarPluginLoader {
 		}
 	
 		@Override
-		public String get(File file, Class<?> aClass) throws PluginInstantiationException {
+		public String get(File file, Class<?> aClass) throws IOException {
 			try (JarFile jar = new JarFile(file)) {
 				final String className = jar.getManifest().getMainAttributes().getValue(attrName);
 				if (className==null) {
-					throw new PluginInstantiationException("Unable to find "+attrName+" entry in jar manifest of "+file);
+					throw new IOException("Unable to find "+attrName+" entry in jar manifest of "+file);
 				}
 				return className;
-			} catch (IOException e) {
-				throw new PluginInstantiationException(e);
 			}
 		}
 	}
@@ -54,13 +51,9 @@ public class JarPluginLoader {
 	public static class DefaultInstanceBuilder implements InstanceBuilder {
 		@Override
 		@SuppressWarnings("unchecked")
-		public <T> T get(Class<T> pluginClass) throws PluginInstantiationException {
-			try {
-				final Constructor<?> constructor = pluginClass.getConstructor();
-				return (T) constructor.newInstance();
-			} catch (ReflectiveOperationException | SecurityException  e) {
-				throw new PluginInstantiationException(e);
-			}
+		public <T> T get(Class<T> pluginClass) throws ReflectiveOperationException, SecurityException {
+			final Constructor<?> constructor = pluginClass.getConstructor();
+			return (T) constructor.newInstance();
 		}
 	}
 	
@@ -95,12 +88,10 @@ public class JarPluginLoader {
 		return this;
 	}
 
-	public <T> List<PlugInContainer<T>> getPlugins(File folder, Class<T> aClass) {
+	public <T> List<PlugInContainer<T>> getPlugins(File folder, Class<T> aClass) throws IOException {
 		final List<PlugInContainer<T>> plugins = new ArrayList<>();
 	    try (Stream<Path> files = Files.find(folder.toPath(), depth, (p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().endsWith(".jar"))) {
 			files.forEach(p -> plugins.add(getContainer(p.toFile(), aClass)));
-	    } catch (IOException e) {
-	    	throw new UncheckedIOException(e);
 	    }
 		return plugins;
 	}
@@ -111,26 +102,23 @@ public class JarPluginLoader {
 			final URLClassLoader loader = new URLClassLoader(new URL[]{jarFile.toURI().toURL()});
 			final T plugin = build(loader, className, aClass);
 			return new JarPlugInContainer<>(jarFile, loader, plugin);
-		} catch (PluginInstantiationException ex) {
-			return new JarPlugInContainer<>(jarFile, ex);
-		} catch (MalformedURLException ex) {
+		} catch (Exception ex) {
 			return new JarPlugInContainer<>(jarFile, new PluginInstantiationException(ex));
 		}
 	}
 	
 	@SuppressWarnings("unchecked")
-	private <T> T build(URLClassLoader loader, String className, Class<T> aClass) throws PluginInstantiationException {
+	private <T> T build(URLClassLoader loader, String className, Class<T> aClass) throws Exception {
 		try {
 			final Class<?> pluginClass = loader.loadClass(className);
 			if (aClass.isAssignableFrom(pluginClass)) {
 				return instanceBuilder.get((Class<T>) pluginClass);
 			} else {
-				tryToClose(loader);
 				throw new PluginInstantiationException(className+" is not a "+aClass.getCanonicalName()+" instance");
 			}
-		} catch (ClassNotFoundException ex) {
+		} catch (Exception ex) {
 			tryToClose(loader);
-			throw new PluginInstantiationException(ex);
+			throw ex;
 		}
 	}
 	
