@@ -1,94 +1,74 @@
-package com.fathzer.plugin.loader;
+package com.fathzer.plugin.loader.jar;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
+import com.fathzer.plugin.loader.InstanceBuilder;
+import com.fathzer.plugin.loader.PlugInContainer;
+import com.fathzer.plugin.loader.PluginInstantiationException;
+
+/** A class able to load plugins from jar files contained in a folder.
+ */
 public class JarPluginLoader {
+	/** The name of the default attribute of jar's manifest used to retrieve the plugins class names. */
 	public static final String DEFAULT_PLUGIN_CLASS_MANIFEST_ATTRIBUTE = "Plugin-Class";
 	
-	private int depth;
 	private ClassNameBuilder classNameBuilder;
 	private InstanceBuilder instanceBuilder;
 
-	public interface ClassNameBuilder {
-		String get(File jarFile, Class<?> aClass) throws Exception;
-	}
-
-	public interface InstanceBuilder {
-		<T> T get(Class<T> aClass) throws Exception;
-	}
-
-	public static class ManifestAttributeClassNameBuilder implements ClassNameBuilder {
-		private final String attrName;
-		
-		public ManifestAttributeClassNameBuilder(String attrName) {
-			this.attrName = attrName;
-		}
-	
-		@Override
-		public String get(File file, Class<?> aClass) throws IOException {
-			try (JarFile jar = new JarFile(file)) {
-				final String className = jar.getManifest().getMainAttributes().getValue(attrName);
-				if (className==null) {
-					throw new IOException("Unable to find "+attrName+" entry in jar manifest of "+file);
-				}
-				return className;
-			}
-		}
-	}
-	
-	public static class DefaultInstanceBuilder implements InstanceBuilder {
-		@Override
-		@SuppressWarnings("unchecked")
-		public <T> T get(Class<T> pluginClass) throws ReflectiveOperationException, SecurityException {
-			final Constructor<?> constructor = pluginClass.getConstructor();
-			return (T) constructor.newInstance();
-		}
-	}
-	
+	/** Constructor.
+	 * <br>By default, the class name of the plugins are searched in the attribute {@value #DEFAULT_PLUGIN_CLASS_MANIFEST_ATTRIBUTE} of the jar's manifest.
+	 * <br>The plugins are instantiated using their public no argument constructor.
+	 * @see #withClassNameBuilder(ClassNameBuilder)
+	 * @see #withInstanceBuilder(InstanceBuilder)
+	 */
 	public JarPluginLoader() {
 		this.classNameBuilder = new ManifestAttributeClassNameBuilder(DEFAULT_PLUGIN_CLASS_MANIFEST_ATTRIBUTE);
-		this.instanceBuilder = new DefaultInstanceBuilder();
-		this.depth = 1;
+		this.instanceBuilder = InstanceBuilder.DEFAULT;
 	}
 	
+	/** Sets the class name builder.
+	 * @param classNameBuilder The new builder
+	 * @return this
+	 */
 	public JarPluginLoader withClassNameBuilder(ClassNameBuilder classNameBuilder) {
 		this.classNameBuilder = classNameBuilder;
 		return this;
 	}
 
-	/** Sets the jar research depth.
-	 * @param depth The maximum number of directory levels to search.
-	 * The default value is 1. It means the search is limited to the jars directly under the searched folder.
-	 * To set no limit, you should set the depth to Integer.MAX_VALUE 
-	 * @return this modified instance
-	 * @throws IllegalArgumentException if depth &lt; 1
+	/** Sets the instance builder.
+	 * @param instanceBuilder The new builder
+	 * @return this
 	 */
-	public JarPluginLoader withDepth(int depth) {
-		if (depth<1) {
-			throw new IllegalArgumentException();
-		}
-		this.depth = depth;
-		return this;
-	}
-	
 	public JarPluginLoader withInstanceBuilder(InstanceBuilder instanceBuilder) {
 		this.instanceBuilder = instanceBuilder;
 		return this;
 	}
 
-	public <T> List<PlugInContainer<T>> getPlugins(File folder, Class<T> aClass) throws IOException {
+	/** Gets the plugins contained in jar files in a folder.
+	 * @param <T> The interface/class of the plugins (all plugins should implement/extends this interface/class).
+	 * @param folder The folder that contains the jar. 
+	 * @param depth The maximum number of directory levels to search.
+	 * <br>A value of 1 means the search is limited to the jars directly under the searched folder.
+	 * <br>To set no limit, you should set the depth to Integer.MAX_VALUE
+	 * @param aClass The interface/class implemented/sub-classed by the plugins
+	 * @return A list of #JarPlugInContainer
+	 * @throws IOException if a problem occurs while browsing the folder.
+	 * @throws IllegalArgumentException if depth is &lt; 1
+	 */
+	public <T> List<PlugInContainer<T>> getPlugins(File folder, int depth, Class<T> aClass) throws IOException {
+		if (depth<1) {
+			throw new IllegalArgumentException();
+		}
 		final List<PlugInContainer<T>> plugins = new ArrayList<>();
 	    try (Stream<Path> files = Files.find(folder.toPath(), depth, (p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().endsWith(".jar"))) {
 			files.forEach(p -> plugins.add(getContainer(p.toFile(), aClass)));

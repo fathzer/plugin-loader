@@ -107,9 +107,11 @@
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>3.3.1</version>
 				<configuration>
+					<!-- see https://stackoverflow.com/questions/69320220/maven-javadoc-listed-classes-twice -->
+					<sourcepath>${basedir}/src/main/java</sourcepath>
 					<header>${project.version}</header>
 					<footer>${project.version}</footer>
-					<excludePackageNames>com.fathzer.cvereporter.utils</excludePackageNames>
+					<doclint>all</doclint>
 				</configuration>
 				<executions>
 					<execution>
