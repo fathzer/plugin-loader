@@ -3,14 +3,11 @@
 	<groupId>com.fathzer</groupId>
 	<artifactId>plugin-loader-test-plugin</artifactId>
 	<version>0.0.1</version>
-	<dependencies>
-		<dependency>
-			<groupId>com.fathzer</groupId>
-			<artifactId>plugin-loader-test-plugin-api</artifactId>
-			<version>0.0.1</version>
-			<scope>provided</scope>
-		</dependency>
-	</dependencies>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.target>8</maven.compiler.target>
+		<maven.compiler.source>8</maven.compiler.source>
+	</properties>
 	<build>
 		<plugins>
 			<plugin>
@@ -20,9 +17,9 @@
 				<configuration>
 					<archive>
 						<manifestEntries>
-							<Plugin-Class>com.fathzer.plugin.loader.test.plugin.Plugin</Plugin-Class>
-							<Unknown-Plugin-Class>com.fathzer.plugin.test.example.plugin.UnknownPlugin</Unknown-Plugin-Class>
-							<Wrong-Constructor-Plugin>com.fathzer.plugin.test.example.plugin.WrongConstructorPlugin</Wrong-Constructor-Plugin>
+							<Plugin-Class>com.fathzer.plugin.loader.test.Plugin</Plugin-Class>
+							<Unknown-Plugin-Class>com.fathzer.plugin.test.UnknownPlugin</Unknown-Plugin-Class>
+							<Wrong-Constructor-Plugin>com.fathzer.plugin.test.WrongConstructorPlugin</Wrong-Constructor-Plugin>
 						</manifestEntries>
 					</archive>
 				</configuration>
