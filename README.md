@@ -23,14 +23,17 @@ It requires java 8+
 ### First define an interface for your plugin.  
 In the example, it is a very basic interface, but it can be as complex as you need. It also can be an abstract class.  
 It's a good practice to define this interface in a library different from the application it self, in order to clearly define the dependencies between application and its plugins.  
-Here is the example:  
+Here is the example:
+
 ```public interface AppPlugin {
     String getGreeting();
-}```  
+}```
+
 Usually there's also an implicit contract about how to instantiate the plugin. The default is to use the no arguments constructor.
 
 ### Then, implement the plugin.
-Here is the code of the example plugin:  
+Here is the code of the example plugin:
+
 ```
 public class MyPlugin implements AppPlugin {
     @Override
@@ -38,7 +41,8 @@ public class MyPlugin implements AppPlugin {
         return "Hello, I'm a plugin";
     }
 }
-```  
+```
+
 You should package the class in a jar file.  
 As the plugin can be complex, the jar file can contains many classes. So, you have to define which class implements the plugin interface in a manifest attribute of the jar.  
 By default *Plugin-Class* attribute is used. See [pom.xml of plugin example](https://github.com/fathzer/plugin-loader/blob/main/plugin-loader-example/plugin-loader-example-plugin/pom.xml) to view how to do it with Maven.
@@ -47,7 +51,8 @@ By default *Plugin-Class* attribute is used. See [pom.xml of plugin example](htt
 
 The **JarPluginLoader** ([Javadoc is here](https://javadoc.io/doc/com.fathzer/plugin-loader)) class allow you to load the plugins contained in a local folder.
 
-Here is an example:  
+Here is an example:
+
 ```
 final JarPluginLoader loader = new JarPluginLoader();
 // Loads all the plugins directly inside the pluginRepository folder.
