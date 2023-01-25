@@ -4,6 +4,64 @@
 [![javadoc](https://javadoc.io/badge2/com.fathzer/plugin-loader/javadoc.svg)](https://javadoc.io/doc/com.fathzer/plugin-loader)
 
 # plugin-loader
-A java plugin loader
+A java plugin loader.
 
-Work in progress
+A plugin is a class that is loaded dynamically by an application to give extra functionalities or customization.
+
+From the technical point of view, the plugin should implement an interface (or extends a class) defined by the application.  
+Usually, the plugin can be stored in a jar file, but you can imagine loading it from the network.
+
+This library helps application developper's to manage plugins in their application.  
+It provides an abstraction of the plugin process and a concrete implementation to build and load plugins stored in jar files.
+
+The [plugin-loader-example](https://github.com/fathzer/plugin-loader/tree/main/plugin-loader-example) folder contains an example of jar plugin implementation and loading.
+
+It requires java 8+
+
+## How to use the plugin loader with jar files
+
+### First define an interface for your plugin.  
+In the example, it is a very basic interface, but it can be as complex as you need. It also can be an abstract class.  
+It's a good practice to define this interface in a library different from the application it self, in order to clearly define the dependencies between application and its plugins.  
+Here is the example:  
+```public interface AppPlugin {
+    String getGreeting();
+}```  
+Usually there's also an implicit contract about how to instantiate the plugin. The default is to use the no arguments constructor.
+
+### Then, implement the plugin.
+Here is the code of the example plugin:  
+```
+public class MyPlugin implements AppPlugin {
+    @Override
+    public String getGreeting() {
+        return "Hello, I'm a plugin";
+    }
+}
+```  
+You should package the class in a jar file.  
+As the plugin can be complex, the jar file can contains many classes. So, you have to define which class implements the plugin interface in a manifest attribute of the jar.  
+By default *Plugin-Class* attribute is used. See [pom.xml of plugin example](https://github.com/fathzer/plugin-loader/blob/main/plugin-loader-example/plugin-loader-example-plugin/pom.xml) to view how to do it with Maven.
+
+### Finally load the plugin in your application
+
+The **JarPluginLoader** ([Javadoc is here](https://javadoc.io/doc/com.fathzer/plugin-loader)) class allow you to load the plugins contained in a local folder.
+
+Here is an example:  
+```
+final JarPluginLoader loader = new JarPluginLoader();
+// Loads all the plugins directly inside the pluginRepository folder.
+List<PlugInContainer<AppPlugin>> greetings = loader.getPlugins(pluginRepository, 1, AppPlugin.class);
+greetings.forEach(c -> {
+	final File file = ((JarPlugInContainer<AppPlugin>)c).getFile();
+	final AppPlugin p = c.get();
+	if (p==null) {
+		// An error occurred while loading the plugin.
+		System.err.println("Unable to load plugin in file "+file+", error is "+c.getException());
+	} else {
+		// The plugin was successfully loaded, use it.
+		System.out.println("Found plugin "+p.getClass()+" in file "+file+". It returns "+p.getGreeting());
+	}
+});
+```
+

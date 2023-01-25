@@ -1,0 +1,1 @@
+A project to build the jar used in tests
