@@ -20,21 +20,24 @@ It requires java 8+
 
 ## How to use the plugin loader with jar files
 
-### First define an interface for your plugin.  
+### First define an interface for your plugin.
+
 In the example, it is a very basic interface, but it can be as complex as you need. It also can be an abstract class.  
 It's a good practice to define this interface in a library different from the application it self, in order to clearly define the dependencies between application and its plugins.  
 Here is the example:
 
-```public interface AppPlugin {
+```java
+public interface AppPlugin {
     String getGreeting();
-}```
+}
+```
 
 Usually there's also an implicit contract about how to instantiate the plugin. The default is to use the no arguments constructor.
 
 ### Then, implement the plugin.
 Here is the code of the example plugin:
 
-```
+```java
 public class MyPlugin implements AppPlugin {
     @Override
     public String getGreeting() {
@@ -53,19 +56,20 @@ The **JarPluginLoader** ([Javadoc is here](https://javadoc.io/doc/com.fathzer/pl
 
 Here is an example:
 
-```
+```java
 final JarPluginLoader loader = new JarPluginLoader();
-// Loads all the plugins directly inside the pluginRepository folder.
+// Loads all the plugins at first level inside the pluginRepository folder.
 List<PlugInContainer<AppPlugin>> greetings = loader.getPlugins(pluginRepository, 1, AppPlugin.class);
 greetings.forEach(c -> {
-	final File file = ((JarPlugInContainer<AppPlugin>)c).getFile();
+	// For each plugin
 	final AppPlugin p = c.get();
 	if (p==null) {
 		// An error occurred while loading the plugin.
+		final File file = ((JarPlugInContainer<AppPlugin>)c).getFile();
 		System.err.println("Unable to load plugin in file "+file+", error is "+c.getException());
 	} else {
 		// The plugin was successfully loaded, use it.
-		System.out.println("Found plugin "+p.getClass()+" in file "+file+". It returns "+p.getGreeting());
+		System.out.println("Found plugin "+p.getClass()+". It returns "+p.getGreeting());
 	}
 });
 ```
