@@ -16,13 +16,12 @@ public class App {
 		// Second argument (if it exists), contains the search depth into the plugins folder
 		final int depth = args.length>1 ? Integer.parseInt(args[1]) : 1;
 		final JarPluginLoader loader = new JarPluginLoader();
-		List<PlugInContainer<AppPlugin>> greetings = loader.getPlugins(pluginRepository, depth,AppPlugin.class);
+		List<PlugInContainer<AppPlugin>> greetings = loader.getPlugins(pluginRepository, depth, AppPlugin.class);
 		greetings.forEach(c -> {
 			final File file = ((JarPlugInContainer<AppPlugin>)c).getFile();
 			final AppPlugin p = c.get();
 			if (p==null) {
 				System.err.println("Unable to load plugin in file "+file+", error is "+c.getException());
-//				c.getException().printStackTrace();
 			} else {
 				System.out.println("Found plugin "+p.getClass()+" in file "+file+". It returns "+p.getGreeting());
 			}
