@@ -12,7 +12,7 @@ From the technical point of view, the plugin should implement an interface (or e
 Usually, the plugin can be stored in a jar file, but you can imagine loading it from the network.
 
 This library helps application developper's to manage plugins in their application.  
-It provides an abstraction of the plugin process and a concrete implementation to build and load plugins stored in jar files.
+It provides an abstraction of the process of loading plugins and a concrete implementation to load plugins stored in jar files.
 
 The [plugin-loader-example](https://github.com/fathzer/plugin-loader/tree/main/plugin-loader-example) folder contains an example of jar plugin implementation and loading.
 
