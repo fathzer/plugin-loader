@@ -52,7 +52,7 @@ By default *Plugin-Class* attribute is used. See [pom.xml of plugin example](htt
 
 ### Finally load the plugin in your application
 
-The **JarPluginLoader** ([Javadoc is here](https://javadoc.io/doc/com.fathzer/plugin-loader)) class allow you to load the plugins contained in a local folder.
+The **JarPluginLoader** ([Javadoc is here](https://javadoc.io/doc/com.fathzer/plugin-loader)) class allows you to load the plugins contained in a local folder.
 
 Here is an example:
 
