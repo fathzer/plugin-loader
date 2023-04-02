@@ -1,12 +1,15 @@
-package com.fathzer.plugin.loader.tests;
+package com.fathzer.plugin.loader.jar;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
@@ -14,14 +17,13 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.fathzer.plugin.loader.InstanceBuilder;
 import com.fathzer.plugin.loader.PlugInContainer;
 import com.fathzer.plugin.loader.Plugins;
-import com.fathzer.plugin.loader.jar.JarPluginLoader;
-import com.fathzer.plugin.loader.jar.ManifestAttributeClassNameBuilder;
 
-class LoaderTest {
+class JarLoaderTest {
 	private Path pluginsFolder = Paths.get("src/test/resources");
 	private Path okFile = pluginsFolder.resolve("plugin-loader-test-plugin-0.0.1.jar");
 	private Path wrongFile = pluginsFolder.resolve("other/wrongFormat.jar");
@@ -42,6 +44,7 @@ class LoaderTest {
 		assertThrows (IOException.class, () -> JarPluginLoader.getFiles(Paths.get("unknown"), 1, JarPluginLoader.JAR_FILE_PREDICATE));
 	}
 	
+	@SuppressWarnings("rawtypes")
 	@Test
 	void test() throws IOException {
 		final JarPluginLoader loader = new JarPluginLoader().withClassNameBuilder(new ManifestAttributeClassNameBuilder("Plugin-Class"));
@@ -70,6 +73,7 @@ class LoaderTest {
 		assertThrows (IOException.class, () -> loader.getPlugins(wrongFile, Supplier.class));
 	}
 	
+	@SuppressWarnings("rawtypes")
 	@Test
 	void testInstantiationProblems() throws IOException {
 		final JarPluginLoader loader = new JarPluginLoader();
@@ -87,16 +91,17 @@ class LoaderTest {
 		assertTrue(plugins.getInstances().isEmpty());
 		assertEquals(1, plugins.getExceptions().size());
 		
-		// Test class does not implement the plugin class
-		Plugins<Function> fplugins = loader.getPlugins(okFile, Function.class);
-		assertTrue(plugins.getInstances().isEmpty());
-		assertEquals(1, plugins.getExceptions().size());
-		
-		// Test class name finder & unknown class
+		// Test class name builder & unknown class
 		loader.withClassNameBuilder(new ManifestAttributeClassNameBuilder("Unknown-Plugin-Class"));
 		plugins = loader.getPlugins(okFile, Supplier.class);
 		assertTrue(plugins.getInstances().isEmpty());
 		assertEquals(1, plugins.getExceptions().size());
+		
+		// Test class is not assignable
+		loader.withClassNameBuilder((p,c) -> Collections.singleton("com.fathzer.plugin.loader.test.Plugin"));
+		Plugins<Function> fplugins = loader.getPlugins(okFile, Function.class);
+		assertTrue(fplugins.getInstances().isEmpty());
+		assertEquals(1, fplugins.getExceptions().size());
 
 		// Test class name finder & unknown manifest attribute
 		loader.withClassNameBuilder(new ManifestAttributeClassNameBuilder("Unknown-Attribute"));
@@ -104,6 +109,7 @@ class LoaderTest {
 		assertTrue(plugins.getPluginContainers().isEmpty());
 	}
 	
+	@SuppressWarnings("rawtypes")
 	@Test
 	void testWrongPluginContainer() {
 		final Supplier<String> s = () -> "hello";
@@ -137,5 +143,13 @@ class LoaderTest {
 			final Constructor<?> constructor = pluginClass.getConstructor(aClass);
 			return (T) constructor.newInstance(param);
 		}
+	}
+	
+	@Test
+	void testJarPredicate(@TempDir Path dir) throws IOException {
+		final Path dirWithJarName = dir.resolve("folder.jar");
+		Files.createDirectories(dirWithJarName);
+		final BasicFileAttributes bfa = Files.readAttributes(dirWithJarName, BasicFileAttributes.class);
+		JarPluginLoader.JAR_FILE_PREDICATE.test(dirWithJarName, bfa);
 	}
 }
