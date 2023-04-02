@@ -98,12 +98,13 @@ public class JarPluginLoader {
 	 * @param <T> The interface/class of the plugins (all plugins should implement/extends this interface/class).
 	 * @param jarFile The file to scan.
 	 * @param aClass The interface/class implemented/sub-classed by the plugins
-	 * @return A {@link Plugins} instance
+	 * @return A {@link Plugins} instance whose class loader is a URLClassLoader (unless {@link #buildClassLoader(Path)} was override to return something else).
+	 * To perform cleanup after plugins are loaded, you can close this loader (@see {@link URLClassLoader#close()}.
 	 * @throws IOException if a problem occurs while reading the jar.
 	 */
 	public <T> Plugins<T> getPlugins(Path jarFile, Class<T> aClass) throws IOException {
 		final Set<String> classNames = classNameBuilder.get(jarFile, aClass);
-		final URLClassLoader loader = classNames.isEmpty() ? null : buildClassLoader(jarFile);
+		final ClassLoader loader = classNames.isEmpty() ? null : buildClassLoader(jarFile);
 		final Plugins<T> result = new Plugins<>(loader);
 		for (String c:classNames) {
 			try {
@@ -125,12 +126,12 @@ public class JarPluginLoader {
 	 * @return A classloader.  
 	 * @throws MalformedURLException
 	 */
-	protected URLClassLoader buildClassLoader(Path jarFile) throws MalformedURLException {
+	protected ClassLoader buildClassLoader(Path jarFile) throws MalformedURLException {
 		return new URLClassLoader(new URL[]{jarFile.toUri().toURL()});
 	}
 	
 	@SuppressWarnings("unchecked")
-	private <T> T build(URLClassLoader loader, String className, Class<T> aClass) throws Exception {
+	private <T> T build(ClassLoader loader, String className, Class<T> aClass) throws Exception {
 		final Class<?> pluginClass = loader.loadClass(className);
 		if (aClass.isAssignableFrom(pluginClass)) {
 			return instanceBuilder.get((Class<T>) pluginClass);

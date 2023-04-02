@@ -1,63 +1,63 @@
 package com.fathzer.plugin.loader;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /** The result of the plugins loading process.
  * @param <T> The interface of the plugin.
  */
-public class Plugins<T> implements AutoCloseable {
-	private URLClassLoader loader;
-	private List<PlugInContainer<T>> containers;
+public class Plugins<T> {
+	private ClassLoader loader;
+	private List<T> instances;
+	private List<PluginInstantiationException> exceptions;
 	
-	public Plugins (URLClassLoader classLoader) {
+	public Plugins (ClassLoader classLoader) {
 		this.loader = classLoader;
-		this.containers = new ArrayList<>();
+		this.instances = new ArrayList<>();
+		this.exceptions = new ArrayList<>();
 	}
 	
+	/** Gets the class loader used to load instances stored in this class.
+	 * @return The classLoader passed in the constructor.
+	 */
+	public ClassLoader getClassLoader() {
+		return this.loader;
+	}
+	
+	/** Adds a plugin.
+	 * @param instance a plugin instance
+	 * @throws IllegalArgumentException if the instance was not loaded by the class loader passed to the constructor.
+	 */
 	public void add(T instance) {
-		containers.add(new PlugInContainer<>(instance));
+		if (instance.getClass().getClassLoader() != loader) {
+			throw new IllegalArgumentException("Can't add a class loaded with another class loader");
+		}
+		instances.add(instance);
 	}
 
 	public void add(PluginInstantiationException exception) {
-		containers.add(new PlugInContainer<>(exception));
-	}
-
-	public List<PlugInContainer<T>> getPluginContainers() {
-		return containers;
+		exceptions.add(exception);
 	}
 
 	/** Gets the successfully loaded instances.
-	 * @return a list of instances
+	 * @return an unmodifiable list of instances
 	 */
 	public List<T> getInstances() {
-		return containers.stream().map(PlugInContainer::get).filter(Objects::nonNull).collect(Collectors.toList());
+		return Collections.unmodifiableList(instances);
 	}
 
 	/** Gets the errors that occured during plugin loading process.
-	 * @return a list of exceptions
+	 * @return an unmodifiable list of exceptions
 	 */
 	public List<PluginInstantiationException> getExceptions() {
-		return containers.stream().map(PlugInContainer::getException).filter(Objects::nonNull).collect(Collectors.toList());
+		return Collections.unmodifiableList(exceptions);
 	}
-
-	/** Closes this container, relinquishing any underlying resources.
-	 * <br>Be aware that this method closes the underlying #{@link java.lang.ClassLoader}. After it is closed, using the plugin may have unpredictable results.
+	
+	/** Tests whether this instance is empty.
+	 * @return true if this contains no instances and no exceptions.
 	 */
-	@Override
-	public void close() {
-		if (loader != null) {
-			try {
-				loader.close();
-			} catch (IOException ex) {
-				throw new UncheckedIOException(ex);
-			}
-			loader = null;
-		}
+	public boolean isEmpty() {
+		return instances.isEmpty() && exceptions.isEmpty();
 	}
 }
