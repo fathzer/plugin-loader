@@ -1,7 +1,7 @@
 package com.fathzer.plugin.loader.jar;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -13,6 +13,7 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fathzer.plugin.loader.ClassNameBuilder;
 import com.fathzer.plugin.loader.InstanceBuilder;
 import com.fathzer.plugin.loader.PluginInstantiationException;
 import com.fathzer.plugin.loader.Plugins;
@@ -26,7 +27,7 @@ public class JarPluginLoader {
 	public static final BiPredicate<Path, BasicFileAttributes> JAR_FILE_PREDICATE = (p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().endsWith(".jar");
 	
 	
-	private ClassNameBuilder classNameBuilder;
+	private ClassNameBuilder<Path> classNameBuilder;
 	private InstanceBuilder instanceBuilder;
 
 	/** Constructor.
@@ -37,7 +38,7 @@ public class JarPluginLoader {
 	 * @see #withInstanceBuilder(InstanceBuilder)
 	 */
 	public JarPluginLoader() {
-		this.classNameBuilder = new ServiceClassNameBuilder();
+		this.classNameBuilder = ServiceClassNameBuilder.INSTANCE;
 		this.instanceBuilder = InstanceBuilder.DEFAULT;
 	}
 	
@@ -45,7 +46,7 @@ public class JarPluginLoader {
 	 * @param classNameBuilder The new builder
 	 * @return this
 	 */
-	public JarPluginLoader withClassNameBuilder(ClassNameBuilder classNameBuilder) {
+	public JarPluginLoader withClassNameBuilder(ClassNameBuilder<Path> classNameBuilder) {
 		this.classNameBuilder = classNameBuilder;
 		return this;
 	}
@@ -102,7 +103,7 @@ public class JarPluginLoader {
 	 */
 	public <T> Plugins<T> getPlugins(Path jarFile, Class<T> aClass) throws IOException {
 		final Set<String> classNames = classNameBuilder.get(jarFile, aClass);
-		final URLClassLoader loader = classNames.isEmpty() ? null : new URLClassLoader(new URL[]{jarFile.toUri().toURL()});
+		final URLClassLoader loader = classNames.isEmpty() ? null : buildClassLoader(jarFile);
 		final Plugins<T> result = new Plugins<>(loader);
 		for (String c:classNames) {
 			try {
@@ -115,6 +116,17 @@ public class JarPluginLoader {
 			}
 		}
 		return result;
+	}
+	
+	/** Builds the classloader that will be used to load the plugin classes.
+	 * <br>The default implementation returns a {@link URLClassLoader} on the <i>jarFile</i>'s url.
+	 * <br>You may override this method if you want to change this behaviour.
+	 * @param jarFile the jar file passed to {@link #getPlugins(Path, Class)}
+	 * @return A classloader.  
+	 * @throws MalformedURLException
+	 */
+	protected URLClassLoader buildClassLoader(Path jarFile) throws MalformedURLException {
+		return new URLClassLoader(new URL[]{jarFile.toUri().toURL()});
 	}
 	
 	@SuppressWarnings("unchecked")

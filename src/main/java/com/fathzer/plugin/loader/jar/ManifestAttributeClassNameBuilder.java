@@ -8,9 +8,11 @@ import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import com.fathzer.plugin.loader.ClassNameBuilder;
+
 /** A {@link ClassNameBuilder} that retrieves the class names in an attribute of jar's manifest.
  */
-public class ManifestAttributeClassNameBuilder implements ClassNameBuilder {
+public class ManifestAttributeClassNameBuilder implements ClassNameBuilder<Path> {
 	private final String attrName;
 	
 	/** Constructor.

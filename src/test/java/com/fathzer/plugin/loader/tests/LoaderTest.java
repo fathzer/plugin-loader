@@ -72,7 +72,7 @@ class LoaderTest {
 	
 	@Test
 	void testInstantiationProblems() throws IOException {
-		final JarPluginLoader loader = new JarPluginLoader().withClassNameBuilder(new ManifestAttributeClassNameBuilder("Plugin-Class"));
+		final JarPluginLoader loader = new JarPluginLoader();
 		
 		// Test unknown constructor
 		final Integer paramInt = Integer.MAX_VALUE;

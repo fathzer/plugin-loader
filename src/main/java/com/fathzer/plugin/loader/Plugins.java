@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /** The result of the plugins loading process.
- * @param <T> The interface of the plugin. 
+ * @param <T> The interface of the plugin.
  */
 public class Plugins<T> implements AutoCloseable {
 	private URLClassLoader loader;
