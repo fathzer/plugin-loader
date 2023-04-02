@@ -12,6 +12,9 @@ public class Plugins<T> {
 	private List<T> instances;
 	private List<PluginInstantiationException> exceptions;
 	
+	/** Constructor.
+	 * @param classLoader The class loader used to load the instanes that will be added to this instance. 
+	 */
 	public Plugins (ClassLoader classLoader) {
 		this.loader = classLoader;
 		this.instances = new ArrayList<>();
@@ -25,6 +28,20 @@ public class Plugins<T> {
 		return this.loader;
 	}
 	
+	@SuppressWarnings("unchecked")
+	public void add(String className, Class<T> aClass, InstanceBuilder instanceBuilder) {
+		try {
+			final Class<?> pluginClass = loader.loadClass(className);
+			if (aClass.isAssignableFrom(pluginClass)) {
+				this.instances.add(instanceBuilder.get((Class<T>) pluginClass));
+			} else {
+				this.exceptions.add(new PluginInstantiationException(className+" is not a "+aClass.getCanonicalName()+" instance"));
+			}
+		} catch (Exception e) {
+			this.exceptions.add(new PluginInstantiationException(e));
+		}
+	}
+	
 	/** Adds a plugin.
 	 * @param instance a plugin instance
 	 * @throws IllegalArgumentException if the instance was not loaded by the class loader passed to the constructor.
@@ -36,7 +53,8 @@ public class Plugins<T> {
 		instances.add(instance);
 	}
 
-	public void add(PluginInstantiationException exception) {
+	//TODO Remove?
+	void add(PluginInstantiationException exception) {
 		exceptions.add(exception);
 	}
 

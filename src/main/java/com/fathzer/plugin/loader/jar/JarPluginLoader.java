@@ -1,7 +1,6 @@
 package com.fathzer.plugin.loader.jar;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -15,7 +14,6 @@ import java.util.stream.Stream;
 
 import com.fathzer.plugin.loader.ClassNameBuilder;
 import com.fathzer.plugin.loader.InstanceBuilder;
-import com.fathzer.plugin.loader.PluginInstantiationException;
 import com.fathzer.plugin.loader.Plugins;
 
 /** A class able to load plugins from jar files contained in a folder.
@@ -107,14 +105,7 @@ public class JarPluginLoader {
 		final ClassLoader loader = classNames.isEmpty() ? null : buildClassLoader(jarFile);
 		final Plugins<T> result = new Plugins<>(loader);
 		for (String c:classNames) {
-			try {
-				final T plugin = build(loader, c, aClass);
-				result.add(plugin);
-			} catch (PluginInstantiationException ex) {
-				result.add(ex);
-			} catch (Exception ex) {
-				result.add(new PluginInstantiationException(ex));
-			}
+			result.add(c, aClass, instanceBuilder);
 		}
 		return result;
 	}
@@ -124,19 +115,9 @@ public class JarPluginLoader {
 	 * <br>You may override this method if you want to change this behaviour.
 	 * @param jarFile the jar file passed to {@link #getPlugins(Path, Class)}
 	 * @return A classloader.  
-	 * @throws MalformedURLException
+	 * @throws IOException if something went wrong
 	 */
-	protected ClassLoader buildClassLoader(Path jarFile) throws MalformedURLException {
+	protected ClassLoader buildClassLoader(Path jarFile) throws IOException {
 		return new URLClassLoader(new URL[]{jarFile.toUri().toURL()});
-	}
-	
-	@SuppressWarnings("unchecked")
-	private <T> T build(ClassLoader loader, String className, Class<T> aClass) throws Exception {
-		final Class<?> pluginClass = loader.loadClass(className);
-		if (aClass.isAssignableFrom(pluginClass)) {
-			return instanceBuilder.get((Class<T>) pluginClass);
-		} else {
-			throw new PluginInstantiationException(className+" is not a "+aClass.getCanonicalName()+" instance");
-		}
 	}
 }
