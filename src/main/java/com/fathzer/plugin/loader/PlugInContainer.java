@@ -6,7 +6,7 @@ import java.util.function.Supplier;
  * <br>This result could be a concrete instance of the plugin or an exception that occurred during its loading.
  * @param <T> The plugin interface.
  */
-public class PlugInContainer<T> implements AutoCloseable, Supplier<T> {
+public class PlugInContainer<T> implements Supplier<T> {
 	private T instance;
 	private final PluginInstantiationException e;
 	
@@ -54,14 +54,6 @@ public class PlugInContainer<T> implements AutoCloseable, Supplier<T> {
 	 */
 	public PluginInstantiationException getException() {
 		return e;
-	}
-
-	/** Closes this container, relinquishing any underlying resources.
-	 * <br>This default implementation does nothing.
-	 */
-	@Override
-	public void close() {
-		// Nothing to do
 	}
 	
 	@Override

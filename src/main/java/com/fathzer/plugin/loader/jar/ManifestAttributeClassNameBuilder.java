@@ -1,8 +1,12 @@
 package com.fathzer.plugin.loader.jar;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 /** A {@link ClassNameBuilder} that retrieves the class names in an attribute of jar's manifest.
  */
@@ -17,13 +21,13 @@ public class ManifestAttributeClassNameBuilder implements ClassNameBuilder {
 	}
 
 	@Override
-	public String get(File file, Class<?> aClass) throws IOException {
-		try (JarFile jar = new JarFile(file)) {
+	public Set<String> get(Path file, Class<?> aClass) throws IOException {
+		try (JarFile jar = new JarFile(file.toFile())) {
 			final String className = jar.getManifest().getMainAttributes().getValue(attrName);
 			if (className==null) {
-				throw new IOException("Unable to find "+attrName+" entry in jar manifest of "+file);
+				return Collections.emptySet();
 			}
-			return className;
+			return Arrays.stream(className.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 		}
 	}
 }
