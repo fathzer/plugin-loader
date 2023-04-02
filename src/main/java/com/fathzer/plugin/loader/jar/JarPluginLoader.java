@@ -21,7 +21,7 @@ import com.fathzer.plugin.loader.Plugins;
  */
 public class JarPluginLoader {
 	/** A predicate that matches jar files.
-	 * @see #getFiles(File, int, BiPredicate)
+	 * @see #getFiles(Path, int, BiPredicate)
 	 */
 	public static final BiPredicate<Path, BasicFileAttributes> JAR_FILE_PREDICATE = (p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().endsWith(".jar");
 	
@@ -97,7 +97,7 @@ public class JarPluginLoader {
 	 * @param <T> The interface/class of the plugins (all plugins should implement/extends this interface/class).
 	 * @param jarFile The file to scan.
 	 * @param aClass The interface/class implemented/sub-classed by the plugins
-	 * @return A {@link JarPlugIns} instance
+	 * @return A {@link Plugins} instance
 	 * @throws IOException if a problem occurs while reading the jar.
 	 */
 	public <T> Plugins<T> getPlugins(Path jarFile, Class<T> aClass) throws IOException {
