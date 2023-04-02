@@ -77,7 +77,11 @@ class JarLoaderTest {
 	@Test
 	void testInstantiationProblems() throws IOException {
 		final JarPluginLoader loader = new JarPluginLoader();
-		
+
+		// Test unknown service file
+		Plugins<Function> fplugins = loader.getPlugins(okFile, Function.class);
+		assertTrue(fplugins.getPluginContainers().isEmpty());
+
 		// Test unknown constructor
 		final Integer paramInt = Integer.MAX_VALUE;
 		loader.withInstanceBuilder(new OtherInstanceBuilder<Integer>(paramInt, Integer.class));
@@ -99,7 +103,7 @@ class JarLoaderTest {
 		
 		// Test class is not assignable
 		loader.withClassNameBuilder((p,c) -> Collections.singleton("com.fathzer.plugin.loader.test.Plugin"));
-		Plugins<Function> fplugins = loader.getPlugins(okFile, Function.class);
+		fplugins = loader.getPlugins(okFile, Function.class);
 		assertTrue(fplugins.getInstances().isEmpty());
 		assertEquals(1, fplugins.getExceptions().size());
 
@@ -147,9 +151,9 @@ class JarLoaderTest {
 	
 	@Test
 	void testJarPredicate(@TempDir Path dir) throws IOException {
-		final Path dirWithJarName = dir.resolve("folder.jar");
-		Files.createDirectories(dirWithJarName);
-		final BasicFileAttributes bfa = Files.readAttributes(dirWithJarName, BasicFileAttributes.class);
-		JarPluginLoader.JAR_FILE_PREDICATE.test(dirWithJarName, bfa);
+		final Path nonJarFile = dir.resolve("toto.txt");
+		Files.createFile(nonJarFile);
+		final BasicFileAttributes bfa = Files.readAttributes(nonJarFile, BasicFileAttributes.class);
+		assertFalse(JarPluginLoader.JAR_FILE_PREDICATE.test(nonJarFile, bfa));
 	}
 }
