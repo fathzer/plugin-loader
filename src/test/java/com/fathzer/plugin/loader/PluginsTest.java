@@ -23,9 +23,14 @@ class PluginsTest {
 		assertFalse(plugins.isEmpty());
 		assertEquals(0, plugins.getExceptions().size());
 		assertEquals(1, plugins.getInstances().size());
+		plugins.add(new PluginInstantiationException("Just a test"));
+		assertFalse(plugins.isEmpty());
+		
 		
 		Plugins<Supplier> plugins2 = new JarPluginLoader().getPlugins(Constants.OK_FILE, Supplier.class);
 		assertThrows(IllegalArgumentException.class, () -> plugins2.add(instance));
+		plugins2.add(new PluginInstantiationException("xxx"));
+		assertFalse(plugins.isEmpty());
 	}
 
 }
