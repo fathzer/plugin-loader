@@ -8,18 +8,30 @@ import java.util.List;
  * @param <T> The interface of the plugin.
  */
 public class Plugins<T> {
+	private Class<T> aClass;
 	private List<T> instances;
 	private List<PluginInstantiationException> exceptions;
 	
 	/** Constructor.
+	 * @param aClass The class of T
 	 */
-	public Plugins () {
+	public Plugins (Class<T> aClass) {
+		this.aClass = aClass;
 		this.instances = new ArrayList<>();
 		this.exceptions = new ArrayList<>();
 	}
 	
+	/** Tries to add a new instance from its class name.
+	 * <br>Its something goes wrong during instantiation, an exception is added to the exceptions list,
+	 * else, a new instance is added to the instances list.
+	 * @param loader The class loader to use to retrieve the class.
+	 * @param className The name of the class
+	 * @param instanceBuilder An {@link InstanceBuilder} used to instantiate the class from its {@link Class}
+	 * @see #getExceptions()
+	 * @see #getInstances()
+	 */
 	@SuppressWarnings("unchecked")
-	public void add(ClassLoader loader, String className, Class<T> aClass, InstanceBuilder instanceBuilder) {
+	public void add(ClassLoader loader, String className, InstanceBuilder instanceBuilder) {
 		try {
 			final Class<?> pluginClass = loader.loadClass(className);
 			if (aClass.isAssignableFrom(pluginClass)) {

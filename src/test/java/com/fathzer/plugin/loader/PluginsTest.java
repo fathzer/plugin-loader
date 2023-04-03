@@ -16,13 +16,13 @@ class PluginsTest {
 	@SuppressWarnings("rawtypes")
 	@Test
 	void test() throws IOException {
-		final Plugins<Supplier> plugins = new Plugins<>();
+		final Plugins<Supplier> plugins = new Plugins<>(Supplier.class);
 		assertTrue(plugins.isEmpty());
 		assertEquals(0, plugins.getExceptions().size());
 		assertEquals(0, plugins.getInstances().size());
 		// Adds an exception
 		final String className = NotASupplier.class.getCanonicalName();
-		plugins.add(ClassLoader.getSystemClassLoader(), className, Supplier.class, InstanceBuilder.DEFAULT);
+		plugins.add(ClassLoader.getSystemClassLoader(), className, InstanceBuilder.DEFAULT);
 		assertFalse(plugins.isEmpty());
 		assertEquals(1, plugins.getExceptions().size());
 		assertEquals(0, plugins.getInstances().size());
