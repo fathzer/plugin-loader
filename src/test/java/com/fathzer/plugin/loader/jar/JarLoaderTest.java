@@ -49,9 +49,6 @@ class JarLoaderTest {
 		assertEquals("com.fathzer.plugin.loader.test.Plugin",plugins.getInstances().get(0).getClass().getCanonicalName());
 		assertTrue(plugins.getExceptions().isEmpty());
 		
-		// Test adding a ClassPath plugin throws an exception
-		assertThrows (IllegalArgumentException.class, () -> plugins.add(()->"Hello"));
-		
 		// Test other constructor
 		final String param = "parameter";
 		loader.withInstanceBuilder(new OtherInstanceBuilder<String>(param, String.class));

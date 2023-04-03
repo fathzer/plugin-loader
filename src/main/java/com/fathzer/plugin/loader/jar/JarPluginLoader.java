@@ -103,10 +103,8 @@ public class JarPluginLoader {
 	public <T> Plugins<T> getPlugins(Path jarFile, Class<T> aClass) throws IOException {
 		final Set<String> classNames = classNameBuilder.get(jarFile, aClass);
 		final ClassLoader loader = classNames.isEmpty() ? null : buildClassLoader(jarFile);
-		final Plugins<T> result = new Plugins<>(loader);
-		for (String c:classNames) {
-			result.add(c, aClass, instanceBuilder);
-		}
+		final Plugins<T> result = new Plugins<>();
+		classNames.forEach(c -> result.add(loader, c, aClass, instanceBuilder));
 		return result;
 	}
 	

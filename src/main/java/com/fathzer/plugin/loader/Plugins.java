@@ -8,28 +8,18 @@ import java.util.List;
  * @param <T> The interface of the plugin.
  */
 public class Plugins<T> {
-	private ClassLoader loader;
 	private List<T> instances;
 	private List<PluginInstantiationException> exceptions;
 	
 	/** Constructor.
-	 * @param classLoader The class loader used to load the instanes that will be added to this instance. 
 	 */
-	public Plugins (ClassLoader classLoader) {
-		this.loader = classLoader;
+	public Plugins () {
 		this.instances = new ArrayList<>();
 		this.exceptions = new ArrayList<>();
 	}
 	
-	/** Gets the class loader used to load instances stored in this class.
-	 * @return The classLoader passed in the constructor.
-	 */
-	public ClassLoader getClassLoader() {
-		return this.loader;
-	}
-	
 	@SuppressWarnings("unchecked")
-	public void add(String className, Class<T> aClass, InstanceBuilder instanceBuilder) {
+	public void add(ClassLoader loader, String className, Class<T> aClass, InstanceBuilder instanceBuilder) {
 		try {
 			final Class<?> pluginClass = loader.loadClass(className);
 			if (aClass.isAssignableFrom(pluginClass)) {
@@ -44,12 +34,8 @@ public class Plugins<T> {
 	
 	/** Adds a plugin.
 	 * @param instance a plugin instance
-	 * @throws IllegalArgumentException if the instance was not loaded by the class loader passed to the constructor.
 	 */
 	public void add(T instance) {
-		if (instance.getClass().getClassLoader() != loader) {
-			throw new IllegalArgumentException("Can't add a class loaded with another class loader");
-		}
 		instances.add(instance);
 	}
 
