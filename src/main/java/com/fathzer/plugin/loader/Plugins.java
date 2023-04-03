@@ -39,11 +39,6 @@ public class Plugins<T> {
 		instances.add(instance);
 	}
 
-	//TODO Remove?
-	void add(PluginInstantiationException exception) {
-		exceptions.add(exception);
-	}
-
 	/** Gets the successfully loaded instances.
 	 * @return an unmodifiable list of instances
 	 */

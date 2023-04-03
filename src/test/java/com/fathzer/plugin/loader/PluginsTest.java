@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import com.fathzer.plugin.loader.jar.JarPluginLoader;
 
 class PluginsTest {
+	
+	private static class NotASupplier {}
 
 	@SuppressWarnings("rawtypes")
 	@Test
@@ -18,8 +20,12 @@ class PluginsTest {
 		assertTrue(plugins.isEmpty());
 		assertEquals(0, plugins.getExceptions().size());
 		assertEquals(0, plugins.getInstances().size());
-		plugins.add(new PluginInstantiationException("Just a test"));
+		// Adds an exception
+		final String className = NotASupplier.class.getCanonicalName();
+		plugins.add(ClassLoader.getSystemClassLoader(), className, Supplier.class, InstanceBuilder.DEFAULT);
 		assertFalse(plugins.isEmpty());
+		assertEquals(1, plugins.getExceptions().size());
+		assertEquals(0, plugins.getInstances().size());
 		final Supplier instance = () -> "a supplier of mine";
 		plugins.add(instance);
 		assertFalse(plugins.isEmpty());

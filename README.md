@@ -75,7 +75,5 @@ greetings.forEach(c -> {
 ```
 
 ## TODO
-- Remove Plugins.add(PluginInstantiationException)?
-- Update documentation
-- Makes JarLoader able to load multiple jar at the same time
 - Create a ClassLoader based PluginLoader
+- Update documentation
