@@ -5,42 +5,17 @@ import static com.fathzer.plugin.loader.Constants.*;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import com.fathzer.plugin.loader.InstanceBuilder;
 import com.fathzer.plugin.loader.Plugins;
 
 class JarLoaderTest {
 
-	@Test
-	void testGetFiles() throws IOException {
-		List<Path> files = JarPluginLoader.getJarFiles(PLUGINS_FOLDER, 1);
-		assertEquals(1, files.size());
-		assertEquals(OK_FILE, files.get(0));
-
-		files = JarPluginLoader.getJarFiles(PLUGINS_FOLDER, 2);
-		assertEquals(2, files.size());
-		assertEquals(new HashSet<>(Arrays.asList(OK_FILE,KO_FILE)), files.stream().collect(Collectors.toSet()));
-
-		assertThrows(IllegalArgumentException.class, () -> JarPluginLoader.getFiles(PLUGINS_FOLDER, 0, JarPluginLoader.JAR_FILE_PREDICATE));
-		assertThrows(IllegalArgumentException.class, () -> JarPluginLoader.getFiles(PLUGINS_FOLDER, -1, JarPluginLoader.JAR_FILE_PREDICATE));
-		// Verify it sends IOException if folder does not exists
-		assertThrows (IOException.class, () -> JarPluginLoader.getFiles(Paths.get("unknown"), 1, JarPluginLoader.JAR_FILE_PREDICATE));
-	}
-	
 	@SuppressWarnings("rawtypes")
 	@Test
 	void test() throws IOException {
@@ -115,13 +90,5 @@ class JarLoaderTest {
 			final Constructor<?> constructor = pluginClass.getConstructor(aClass);
 			return (T) constructor.newInstance(param);
 		}
-	}
-	
-	@Test
-	void testJarPredicate(@TempDir Path dir) throws IOException {
-		final Path nonJarFile = dir.resolve("toto.txt");
-		Files.createFile(nonJarFile);
-		final BasicFileAttributes bfa = Files.readAttributes(nonJarFile, BasicFileAttributes.class);
-		assertFalse(JarPluginLoader.JAR_FILE_PREDICATE.test(nonJarFile, bfa));
 	}
 }
