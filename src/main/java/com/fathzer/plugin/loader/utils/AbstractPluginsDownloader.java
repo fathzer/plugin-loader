@@ -194,7 +194,7 @@ public abstract class AbstractPluginsDownloader<T> {
 		try {
 			return getHttpClient().send(request, handler);
 		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+//			Thread.currentThread().interrupt();
 			throw new IOException(e);
 		}
 	}
