@@ -61,6 +61,8 @@ class ProxySettingsTest {
 		assertThrows(IllegalArgumentException.class, () -> ProxySettings.fromString("host:xxx"));
 		assertThrows(IllegalArgumentException.class, () -> ProxySettings.fromString("u:p@:3128"));
 		assertThrows(IllegalArgumentException.class, () -> ProxySettings.fromString("u:p@myHost{1}:3128"));
+		assertThrows(IllegalArgumentException.class, () -> ProxySettings.fromString("a.1c:3128"));
+		assertThrows(IllegalArgumentException.class, () -> ProxySettings.fromString("http://a.1c:3128/").getHost());
 	}
 
 	@Test
