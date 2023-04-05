@@ -21,7 +21,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<jdk8_classes>${project.build.outputDirectory}_jdk8</jdk8_classes>
+		<jdk8-classes>${project.build.outputDirectory}_jdk8</jdk8-classes>
 		<animal-version>1.23</animal-version>
 	</properties>
 
@@ -83,7 +83,7 @@
 							<source>8</source>
 							<target>8</target>
 							<fork>true</fork>
-							<outputDirectory>${jdk8_classes}</outputDirectory>
+							<outputDirectory>${jdk8-classes}</outputDirectory>
 							<excludes>
 								<exclude>**/com/fathzer/plugin/loader/utils/AbstractPluginsDownloader.java</exclude>
 							</excludes>
@@ -109,7 +109,7 @@
 							<goal>jar</goal>
 						</goals>
 						<configuration>
-							<classesDirectory>${jdk8_classes}</classesDirectory>
+							<classesDirectory>${jdk8-classes}</classesDirectory>
 							<classifier>jdk8</classifier>
 						</configuration>
 					</execution>

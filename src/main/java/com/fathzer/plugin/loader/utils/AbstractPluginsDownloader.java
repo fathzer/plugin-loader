@@ -31,10 +31,11 @@ import org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement;
 
 /** A class that loads plugins from an Internet remote repository.
  * <br><b>WARNING</b>: This class requires a Java 11+ JVM and is not available in java 8 distribution!
+ * @param <T> The plugins type
  */
 @IgnoreJRERequirement
-public abstract class AbstractPluginsDownloader {
-	private final PluginRegistry<?> registry;
+public abstract class AbstractPluginsDownloader<T> {
+	private final PluginRegistry<T> registry;
 	private final URI uri;
 	private final Path localDirectory;
 	private ProxySettings proxy;
@@ -47,7 +48,7 @@ public abstract class AbstractPluginsDownloader {
 	 * @param uri The uri where to load the remote plugin registry.
 	 * @param localDirectory The folder where plugins jar files will be loaded.
 	 */
-	protected AbstractPluginsDownloader(PluginRegistry<?> registry, URI uri, Path localDirectory) {
+	protected AbstractPluginsDownloader(PluginRegistry<T> registry, URI uri, Path localDirectory) {
 		if (registry==null) {
 			throw new IllegalArgumentException("registry can't be null");
 		}
@@ -72,7 +73,7 @@ public abstract class AbstractPluginsDownloader {
 	/** Gets the plugin registry.
 	 * @return The PluginRegistry passed to the constructor.
 	 */
-	public PluginRegistry<?> getRegistry() {
+	public PluginRegistry<T> getRegistry() {
 		return registry;
 	}
 	

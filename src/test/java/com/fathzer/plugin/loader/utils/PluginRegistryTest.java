@@ -22,8 +22,6 @@ class PluginRegistryTest {
 		public String get() {
 			return key;
 		}
-
-		
 	}
 
 	@Test
