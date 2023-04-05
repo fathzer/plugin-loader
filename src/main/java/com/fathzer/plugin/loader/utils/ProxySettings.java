@@ -41,13 +41,13 @@ public class ProxySettings {
 		final ProxySettings result = new ProxySettings();
 		try {
 			final URI uri = new URI("http://"+proxy);
-			result.port = uri.getPort();
-			if (result.port<=0) {
-				throw new IllegalArgumentException("missing port");
-			}
 			result.host = uri.getHost();
 			if (result.host==null) {
 				throw new IllegalArgumentException("missing host");
+			}
+			result.port = uri.getPort();
+			if (result.port<=0) {
+				throw new IllegalArgumentException("missing port");
 			}
 			result.login = LoginParser.fromString(uri.getUserInfo());
 		} catch (URISyntaxException e) {
