@@ -2,7 +2,6 @@ package com.fathzer.plugin.loader.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.URI;
@@ -18,8 +17,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -135,18 +136,19 @@ public abstract class AbstractPluginsDownloader<T> {
 		final Map<String, URI> remoteRegistry = getURIMap();
 		checkMissingKeys(Arrays.stream(keys), k -> !remoteRegistry.containsKey(k));
 		final Set<URI> toDownload = Arrays.stream(keys).map(remoteRegistry::get).collect(Collectors.toSet());
-		try {
-			load(toDownload.stream().map(this::download).toArray(Path[]::new));
-			checkMissingKeys(Arrays.stream(keys), s -> this.registry.get(s)==null);
-		} catch (UncheckedIOException e) {
-			throw e.getCause();
+		final List<Path> paths = new ArrayList<>(toDownload.size());
+		for (URI current : toDownload) {
+			paths.add(download(current));
 		}
+		load(paths);
+		checkMissingKeys(Arrays.stream(keys), s -> this.registry.get(s)==null);
 	}
 	
 	/** Loads local plugins files downloaded from remote repository in the registry passed to the constructor. 
 	 * @param paths The file to load in the registry
+	 * @throws IOException If something went wrong
 	 */
-	protected abstract void load(Path[] paths);
+	protected abstract void load(Collection<Path> paths) throws IOException;
 	
 	/** Gets the local path where a remote jar should be downloaded. 
 	 * @param uri The uri of a remote jar
@@ -168,31 +170,33 @@ public abstract class AbstractPluginsDownloader<T> {
 	/** Downloads an URI to a file.
 	 * @param uri The uri to download
 	 * @return The path where the URI body was downloaded.
-	 * @throws UncheckedIOException if something went wrong
+	 * @throws IOException if something went wrong
 	 */
-	protected Path download(URI uri) {
+	protected Path download(URI uri) throws IOException {
 		final Path file = getDownloadTarget(uri);
 		if (shouldLoad(uri, file)) {
 			final HttpRequest.Builder requestBuilder = getRequestBuilder().uri(uri);
 			customizeJarRequest(requestBuilder);
 			final HttpRequest request = requestBuilder.build();
-			try {
-				if (!Files.exists(localDirectory)) {
-					Files.createDirectories(localDirectory);
-				}
-				final BodyHandler<Path> bodyHandler = info -> info.statusCode() == 200 ? BodySubscribers.ofFile(file) : BodySubscribers.replacing(Paths.get("/NULL"));
-				final HttpResponse<Path> response = getHttpClient().send(request, bodyHandler);
-				if (response.statusCode()!=200) {
-					throw new IOException(String.format("Unexpected status code %d received while downloading %s", response.statusCode(), uri));
-				}
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new UncheckedIOException(new IOException(e));
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
+			if (!Files.exists(localDirectory)) {
+				Files.createDirectories(localDirectory);
+			}
+			final BodyHandler<Path> bodyHandler = info -> info.statusCode() == 200 ? BodySubscribers.ofFile(file) : BodySubscribers.replacing(Paths.get("/NULL"));
+			final HttpResponse<Path> response = call(request, bodyHandler);
+			if (response.statusCode()!=200) {
+				throw new IOException(String.format("Unexpected status code %d received while downloading %s", response.statusCode(), uri));
 			}
 		}
 		return file;
+	}
+	
+	private <V> HttpResponse<V> call(HttpRequest request, BodyHandler<V> handler) throws IOException {
+		try {
+			return getHttpClient().send(request, handler);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException(e);
+		}
 	}
 	
 	/** Checks that plugins are registered in a map.
@@ -215,17 +219,12 @@ public abstract class AbstractPluginsDownloader<T> {
 		final HttpRequest.Builder requestBuilder = getRequestBuilder();
 		customizeRegistryRequest(requestBuilder);
 		final HttpRequest request = requestBuilder.uri(uri).build();
-		try {
-			final HttpResponse<InputStream> response = getHttpClient().send(request, BodyHandlers.ofInputStream());
-			if (response.statusCode()!=200) {
-				throw new IOException(String.format("Unexpected status code %d received while downloading %s registry", response.statusCode(), pluginTypeWording));
-			}
-			try (InputStream in = response.body()) {
-				return getURIMap(in);
-			}
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new IOException(e);
+		final HttpResponse<InputStream> response = call(request, BodyHandlers.ofInputStream());
+		if (response.statusCode()!=200) {
+			throw new IOException(String.format("Unexpected status code %d received while downloading %s registry", response.statusCode(), pluginTypeWording));
+		}
+		try (InputStream in = response.body()) {
+			return getURIMap(in);
 		}
 	}
 	

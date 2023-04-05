@@ -6,7 +6,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpRequest.Builder;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -40,11 +40,11 @@ class AbstractPluginsDownloaderTest {
 	private static final String REGISTRY_HEADER_VALUE = "registry";
 	private static final String JAR_HEADER_VALUE = "jar";
 
-	private final class TestPluginDownloader extends AbstractPluginsDownloader {
+	private final class TestPluginDownloader<T> extends AbstractPluginsDownloader<T> {
 		private final Map<String,URI> map;
-		private Path[] lastPathsLoaded;
+		private Collection<Path> lastPathsLoaded;
 		
-		private TestPluginDownloader(PluginRegistry<?> registry, URI uri, Path localDirectory) {
+		private TestPluginDownloader(PluginRegistry<T> registry, URI uri, Path localDirectory) {
 			super(registry, uri, localDirectory);
 			map = new HashMap<>();
 			map.put(VALID_PLUGIN_KEY, getUri().resolve(PLUGINS_JAR_URI_PATH));
@@ -74,7 +74,7 @@ class AbstractPluginsDownloaderTest {
 		}
 
 		@Override
-		protected void load(Path[] paths) {
+		protected void load(Collection<Path> paths) {
 			this.lastPathsLoaded = paths;
 		}
 	}
@@ -109,22 +109,37 @@ class AbstractPluginsDownloaderTest {
 	}
 	
 	@Test
+	void testWrongConstructorArgs(@TempDir Path dir){
+		final PluginRegistry<Object> plugins = new PluginRegistry<>(Object::toString);
+		final URI uri = server.url(REGISTRY_PATH).uri();
+		assertThrows(IllegalArgumentException.class, () -> new TestPluginDownloader<>(null, uri, dir));
+		assertThrows(IllegalArgumentException.class, () -> new TestPluginDownloader<>(plugins, null, dir));
+		assertThrows(IllegalArgumentException.class, () -> new TestPluginDownloader<>(plugins, uri, null));
+	}
+
+	
+	@Test
 	void testUnknownURI(@TempDir Path dir) throws IOException {
-		final PluginRegistry<?> plugins = new PluginRegistry<>(Object::toString);
+		final PluginRegistry<Object> plugins = new PluginRegistry<>(Object::toString);
 		{
-			final AbstractPluginsDownloader downloader = new TestPluginDownloader(plugins, server.url("/registryKo").uri(), dir);
+			final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(plugins, server.url("/registryKo").uri(), dir);
 			assertThrows (IOException.class, () -> downloader.getURIMap());
 		}
 
-		final AbstractPluginsDownloader downloader = new TestPluginDownloader(plugins, server.url("/registryUnknown").uri(), dir);
+		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(plugins, server.url("/registryUnknown").uri(), dir);
 		assertThrows (IOException.class, () -> downloader.getURIMap());
 	}
 
 	@Test
 	void test(@TempDir Path dir) throws Exception {
 		@SuppressWarnings("unchecked")
-		PluginRegistry<? super Object> registry = mock(PluginRegistry.class);
-		final TestPluginDownloader downloader = new TestPluginDownloader(registry, server.url(REGISTRY_PATH).uri(), dir);
+		PluginRegistry<Object> registry = mock(PluginRegistry.class);
+		final TestPluginDownloader<Object> downloader = new TestPluginDownloader<>(registry, server.url(REGISTRY_PATH).uri(), dir);
+		
+		assertEquals(registry, downloader.getRegistry());
+		assertEquals(dir, downloader.getLocalDirectory());
+		downloader.setPluginTypeWording("object plugin");
+		assertEquals("object plugin",downloader.getPluginTypeWording());
 		
 		// Test getting remote plugins map is correct
 		clearRequests();
@@ -137,8 +152,8 @@ class AbstractPluginsDownloaderTest {
 		when(registry.get(VALID_PLUGIN_KEY)).thenReturn("ok");
 		downloader.load(VALID_PLUGIN_KEY);
 		// check right paths were passed to registry (a URL classLoader on the right file)
-		assertEquals(1, downloader.lastPathsLoaded.length);
-		final Path path = downloader.lastPathsLoaded[0];
+		assertEquals(1, downloader.lastPathsLoaded.size());
+		final Path path = downloader.lastPathsLoaded.iterator().next();
 		assertTrue(Files.isRegularFile(path));
 		assertEquals(FAKE_JAR_FILE_CONTENT, Files.readAllLines(path).get(0));
 		
@@ -154,7 +169,7 @@ class AbstractPluginsDownloaderTest {
 	
 	@Test
 	void testEmptyDir(@TempDir Path dir) throws Exception {
-		final AbstractPluginsDownloader downloader = new TestPluginDownloader(new PluginRegistry<>(Object::toString), server.url(REGISTRY_PATH).uri(), dir);
+		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(new PluginRegistry<>(Object::toString), server.url(REGISTRY_PATH).uri(), dir);
 
 		assertTrue(Files.deleteIfExists(dir), "Problem while deleting temp dir");
 		downloader.clean(); // Test no exception is thrown
@@ -165,7 +180,7 @@ class AbstractPluginsDownloaderTest {
 	
 	@Test
 	void testDownloadAndClean(@TempDir Path dir) throws IOException, InterruptedException {
-		final AbstractPluginsDownloader downloader = new TestPluginDownloader(new PluginRegistry<>(Object::toString), server.url(REGISTRY_PATH).uri(), dir);
+		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(new PluginRegistry<>(Object::toString), server.url(REGISTRY_PATH).uri(), dir);
 		final URI existingURI = server.url(PLUGINS_JAR_URI_PATH).uri();
 		clearRequests();
 		Path path = downloader.download(existingURI);
@@ -185,7 +200,7 @@ class AbstractPluginsDownloaderTest {
 		assertFalse(Files.isRegularFile(path));
 
 		final URI missingURI = server.url("/plugins/missing.jar").uri();
-		assertThrows(UncheckedIOException.class, ()->downloader.download(missingURI));
+		assertThrows(IOException.class, ()->downloader.download(missingURI));
 	}
 
 	private void clearRequests() throws InterruptedException {
