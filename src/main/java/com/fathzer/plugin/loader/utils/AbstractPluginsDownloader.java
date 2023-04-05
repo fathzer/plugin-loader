@@ -125,7 +125,7 @@ public abstract class AbstractPluginsDownloader<T> {
 		return false;
 	}
 	
-	/** Search for plugins in remote registry, then loads them and verify they are not missing anymore.
+	/** Search for plugins in remote repository, then loads them and verify they are not missing anymore.
 	 * @param keys The plugin's keys to search
 	 * @throws IOException If something went wrong
 	 */
@@ -134,14 +134,14 @@ public abstract class AbstractPluginsDownloader<T> {
 			return;
 		}
 		final Map<String, URI> remoteRegistry = getURIMap();
-		checkMissingKeys(Arrays.stream(keys), k -> !remoteRegistry.containsKey(k));
+		checkMissingKeys(Arrays.stream(keys), k -> !remoteRegistry.containsKey(k)," remote repository");
 		final Set<URI> toDownload = Arrays.stream(keys).map(remoteRegistry::get).collect(Collectors.toSet());
 		final List<Path> paths = new ArrayList<>(toDownload.size());
 		for (URI current : toDownload) {
 			paths.add(download(current));
 		}
 		load(paths);
-		checkMissingKeys(Arrays.stream(keys), s -> this.registry.get(s)==null);
+		checkMissingKeys(Arrays.stream(keys), s -> this.registry.get(s)==null," loaded plugins");
 	}
 	
 	/** Loads local plugins files downloaded from remote repository in the registry passed to the constructor. 
@@ -203,10 +203,10 @@ public abstract class AbstractPluginsDownloader<T> {
 	 * @param keys The keys to check.
 	 * @throws IllegalArgumentException if some keys are missing
 	 */
-	private void checkMissingKeys(Stream<String> keys, Predicate<String> missingDetector) {
+	private void checkMissingKeys(Stream<String> keys, Predicate<String> missingDetector, String container) {
 		final Set<String> missing = keys.filter(missingDetector).collect(Collectors.toSet());
 		if (!missing.isEmpty()) {
-			throw new IllegalArgumentException(String.format("Unable to find the following %s: %s", pluginTypeWording, missing));
+			throw new IllegalArgumentException(String.format("Unable to find the following %s in %s: %s", pluginTypeWording, container, missing));
 		}
 	}
 	

@@ -138,8 +138,8 @@ class AbstractPluginsDownloaderTest {
 		
 		assertEquals(registry, downloader.getRegistry());
 		assertEquals(dir, downloader.getLocalDirectory());
-		downloader.setPluginTypeWording("object plugin");
-		assertEquals("object plugin",downloader.getPluginTypeWording());
+		downloader.setPluginTypeWording("object");
+		assertEquals("object",downloader.getPluginTypeWording());
 		
 		// Test getting remote plugins map is correct
 		clearRequests();
@@ -165,6 +165,10 @@ class AbstractPluginsDownloaderTest {
 		
 		// Test load nothing doesn't throw exception
 		downloader.load();
+		
+		// Test searched plugin was in repository but not effectively in the repository's jar 
+		when(registry.get(VALID_PLUGIN_KEY)).thenReturn(null);
+		assertThrows(IllegalArgumentException.class, () -> downloader.load(VALID_PLUGIN_KEY));
 	}
 	
 	@Test

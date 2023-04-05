@@ -6,6 +6,8 @@ import static com.fathzer.plugin.loader.Constants.PLUGINS_FOLDER;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,5 +44,12 @@ class FileUtilsTest {
 		Files.createFile(nonJarFile);
 		final BasicFileAttributes bfa = Files.readAttributes(nonJarFile, BasicFileAttributes.class);
 		assertFalse(FileUtils.IS_JAR.test(nonJarFile, bfa));
+	}
+	
+	@Test
+	void testGetURL() throws URISyntaxException {
+		final Path path = new java.io.File("").toPath();
+		final URL url = FileUtils.getURL(path);
+		assertEquals(path.toAbsolutePath(), Paths.get(url.toURI()));
 	}
 }
