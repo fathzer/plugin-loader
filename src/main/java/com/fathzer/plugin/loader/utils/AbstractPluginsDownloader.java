@@ -90,6 +90,7 @@ public abstract class AbstractPluginsDownloader<T> {
 	 */
 	public void setProxy(ProxySettings proxy) {
 		this.proxy = proxy;
+		this.httpClient = null;
 	}
 	
 	/** Sets the wording of plugins.
@@ -175,9 +176,7 @@ public abstract class AbstractPluginsDownloader<T> {
 	protected Path download(URI uri) throws IOException {
 		final Path file = getDownloadTarget(uri);
 		if (shouldLoad(uri, file)) {
-			final HttpRequest.Builder requestBuilder = getRequestBuilder().uri(uri);
-			customizeJarRequest(requestBuilder);
-			final HttpRequest request = requestBuilder.build();
+			final HttpRequest request = getJarRequestBuilder(uri).build();
 			if (!Files.exists(localDirectory)) {
 				Files.createDirectories(localDirectory);
 			}
@@ -216,9 +215,7 @@ public abstract class AbstractPluginsDownloader<T> {
 	 * @throws IOException If something went wrong
 	 */
 	protected Map<String, URI> getURIMap() throws IOException {
-		final HttpRequest.Builder requestBuilder = getRequestBuilder();
-		customizeRegistryRequest(requestBuilder);
-		final HttpRequest request = requestBuilder.uri(uri).build();
+		final HttpRequest request = getRegistryRequestBuilder().build();
 		final HttpResponse<InputStream> response = call(request, BodyHandlers.ofInputStream());
 		if (response.statusCode()!=200) {
 			throw new IOException(String.format("Unexpected status code %d received while downloading %s registry", response.statusCode(), pluginTypeWording));
@@ -228,20 +225,21 @@ public abstract class AbstractPluginsDownloader<T> {
 		}
 	}
 	
-	/** Allows sub-classes to customize the request used to query the registry.
-	 * <br>For example, a sub-class can add headers to the request with this method.
-	 * @param requestBuilder The request under construction.
+	/** Gets the builder of the request used to query the registry.
+	 * <br>A sub-class can override this method to, for example, add headers to the request.
+	 * @return a request builder that build the request.
 	 */
-	protected void customizeRegistryRequest(HttpRequest.Builder requestBuilder) {
-		// Allows customization of request in sub-classes
+	protected HttpRequest.Builder getRegistryRequestBuilder() {
+		return getRequestBuilder().uri(uri);
 	}
 
-	/** Allows sub-classes to customize the request used to download a jar.
-	 * <br>For example, a sub-class can add headers to the request with this method.
-	 * @param requestBuilder The request under construction.
+	/** Gets the builder of the request used to download a jar.
+	 * <br>A sub-class can override this method to, for example, add headers to the request.
+	 * @param uri The jar's uri.
+	 * @return a request builder that build the request.
 	 */
-	protected void customizeJarRequest(HttpRequest.Builder requestBuilder) {
-		// Allows customization of request in sub-classes
+	protected HttpRequest.Builder getJarRequestBuilder(URI uri) {
+		return getRequestBuilder().uri(uri);
 	}
 
 	/** Gets the map that links a plugin key to the URI of a remote jar file from an InputStream 

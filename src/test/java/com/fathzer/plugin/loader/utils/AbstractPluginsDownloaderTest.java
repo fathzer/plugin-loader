@@ -6,8 +6,11 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
 import java.net.URI;
-import java.net.http.HttpRequest.Builder;
+import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterAll;
@@ -40,7 +44,7 @@ class AbstractPluginsDownloaderTest {
 	private static final String REGISTRY_HEADER_VALUE = "registry";
 	private static final String JAR_HEADER_VALUE = "jar";
 
-	private final class TestPluginDownloader<T> extends AbstractPluginsDownloader<T> {
+	private static class TestPluginDownloader<T> extends AbstractPluginsDownloader<T> {
 		private final Map<String,URI> map;
 		private Collection<Path> lastPathsLoaded;
 		
@@ -62,15 +66,17 @@ class AbstractPluginsDownloaderTest {
 		}
 
 		@Override
-		protected void customizeRegistryRequest(Builder requestBuilder) {
-			super.customizeRegistryRequest(requestBuilder);
+		protected HttpRequest.Builder getRegistryRequestBuilder() {
+			final HttpRequest.Builder requestBuilder = super.getRegistryRequestBuilder();
 			requestBuilder.header(CUSTOM_HEADER, REGISTRY_HEADER_VALUE);
+			return requestBuilder;
 		}
 
 		@Override
-		protected void customizeJarRequest(Builder requestBuilder) {
-			super.customizeJarRequest(requestBuilder);
+		protected HttpRequest.Builder getJarRequestBuilder(URI uri) {
+			final HttpRequest.Builder requestBuilder = super.getJarRequestBuilder(uri);
 			requestBuilder.header(CUSTOM_HEADER, JAR_HEADER_VALUE);
+			return requestBuilder;
 		}
 
 		@Override
@@ -129,6 +135,40 @@ class AbstractPluginsDownloaderTest {
 		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(plugins, server.url("/registryUnknown").uri(), dir);
 		assertThrows (IOException.class, () -> downloader.getURIMap());
 	}
+	
+	@Test
+	void testProxy(@TempDir Path dir) throws Exception {
+		final String proxyAuthHeader = "Proxy-Authorization";
+		@SuppressWarnings("unchecked")
+		final PluginRegistry<Object> registry = mock(PluginRegistry.class);
+		final URI uri = server.url(REGISTRY_PATH).uri();
+		final TestPluginDownloader<Object> downloader = new TestPluginDownloader<>(registry, uri, dir);
+		clearRequests();
+		downloader.setProxy(ProxySettings.fromString("a:b@host:3456"));
+		ProxySelector proxy = downloader.getHttpClient().proxy().orElse(null);
+		assertNotNull(proxy);
+		Proxy p = proxy.select(uri).get(0);
+		assertEquals(new InetSocketAddress("host",3456), p.address());
+		// Verif proxy authorization is there.
+		HttpRequest request = downloader.getRegistryRequestBuilder().build();
+		final Optional<String> header = request.headers().firstValue(proxyAuthHeader);
+		assertTrue(header.isPresent());
+		
+		// Test we can revert proxy to null
+		downloader.setProxy(null);
+		assertFalse(downloader.getHttpClient().proxy().isPresent());
+		request = downloader.getRegistryRequestBuilder().build();
+		assertFalse(request.headers().firstValue(proxyAuthHeader).isPresent());
+
+		// Test with unauthenticated proxy
+		downloader.setProxy(ProxySettings.fromString("proxy:4567"));
+		proxy = downloader.getHttpClient().proxy().orElse(null);
+		assertNotNull(proxy);
+		p = proxy.select(uri).get(0);
+		assertEquals(new InetSocketAddress("proxy",4567), p.address());
+		request = downloader.getRegistryRequestBuilder().build();
+		assertFalse(request.headers().firstValue(proxyAuthHeader).isPresent());
+	}
 
 	@Test
 	void test(@TempDir Path dir) throws Exception {
@@ -147,6 +187,7 @@ class AbstractPluginsDownloaderTest {
 		assertEquals(new HashSet<>(Arrays.asList(VALID_PLUGIN_KEY,MISSING_JAR_PLUGIN_KEY)), map.keySet());
 		RecordedRequest request = server.takeRequest();
 		assertEquals(REGISTRY_HEADER_VALUE,request.getHeader(CUSTOM_HEADER));
+		assertNull(request.getHeader("Proxy-Authorization"));
 
 		// Test load of a valid key
 		when(registry.get(VALID_PLUGIN_KEY)).thenReturn("ok");
