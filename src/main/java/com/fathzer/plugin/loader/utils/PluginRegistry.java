@@ -24,11 +24,10 @@ public class PluginRegistry<T> {
 	
 	/** Register a plugin.
 	 * @param plugin The plugin to register.
-	 * @return true if no plugin of the same class was already registered.
+	 * @return The plugin previously registered for the same key. Null if no plugin was registered for that key.
 	 */
-	public boolean register(T plugin) {
-		T previous = pluginsMap.put(keyFunction.apply(plugin),plugin);
-		return (previous==null || !plugin.getClass().equals(previous.getClass()));
+	public T register(T plugin) {
+		return pluginsMap.put(keyFunction.apply(plugin), plugin);
 	}
 	
 	/** Gets a plugin by its key.
