@@ -22,13 +22,14 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jdk8_classes>${project.build.outputDirectory}_jdk8</jdk8_classes>
+		<animal-version>1.23</animal-version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.codehaus.mojo</groupId>
 			<artifactId>animal-sniffer-annotations</artifactId>
-			<version>1.23</version>
+			<version>${animal-version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -138,6 +139,8 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>animal-sniffer-maven-plugin</artifactId>
+				<!-- managed 1.22 version does not ignores classes tagged to be ignored -->
+				<version>${animal-version}</version>
 				<configuration>
 					<signature>
 						<groupId>org.codehaus.mojo.signature</groupId>
