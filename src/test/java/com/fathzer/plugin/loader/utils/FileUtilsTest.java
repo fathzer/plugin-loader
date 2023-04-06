@@ -1,8 +1,6 @@
 package com.fathzer.plugin.loader.utils;
 
-import static com.fathzer.plugin.loader.Constants.KO_FILE;
-import static com.fathzer.plugin.loader.Constants.OK_FILE;
-import static com.fathzer.plugin.loader.Constants.PLUGINS_FOLDER;
+import static com.fathzer.plugin.loader.Constants.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
@@ -28,8 +26,7 @@ class FileUtilsTest {
 		assertEquals(OK_FILE, files.get(0));
 
 		files = FileUtils.getJarFiles(PLUGINS_FOLDER, 2);
-		assertEquals(2, files.size());
-		assertEquals(new HashSet<>(Arrays.asList(OK_FILE,KO_FILE)), files.stream().collect(Collectors.toSet()));
+		assertEquals(new HashSet<>(Arrays.asList(OK_FILE,KO_FILE,EMPTY_FILE,EMPTY_MANIFEST)), files.stream().collect(Collectors.toSet()));
 
 		assertThrows(IllegalArgumentException.class, () -> FileUtils.getFiles(PLUGINS_FOLDER, 0, FileUtils.IS_JAR));
 		assertThrows(IllegalArgumentException.class, () -> FileUtils.getFiles(PLUGINS_FOLDER, -1, FileUtils.IS_JAR));

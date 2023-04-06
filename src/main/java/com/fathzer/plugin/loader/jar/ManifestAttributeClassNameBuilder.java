@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import com.fathzer.plugin.loader.ClassNameBuilder;
@@ -28,7 +29,11 @@ public class ManifestAttributeClassNameBuilder implements ClassNameBuilder<Path>
 	@Override
 	public Set<String> get(Path file, Class<?> aClass) throws IOException {
 		try (JarFile jar = new JarFile(file.toFile())) {
-			final String className = jar.getManifest().getMainAttributes().getValue(attrName);
+			final Manifest manifest = jar.getManifest();
+			if (manifest==null) {
+				return Collections.emptySet();
+			}
+			final String className = manifest.getMainAttributes().getValue(attrName);
 			if (className==null) {
 				return Collections.emptySet();
 			}
