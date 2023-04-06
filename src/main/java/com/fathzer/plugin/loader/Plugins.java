@@ -71,4 +71,12 @@ public class Plugins<T> {
 	public boolean isEmpty() {
 		return instances.isEmpty() && exceptions.isEmpty();
 	}
+
+	/** Adds the content of another plugins instance to this.
+	 * @param plugins another instance
+	 */
+	public void add(Plugins<T> plugins) {
+		this.exceptions.addAll(plugins.exceptions);
+		this.instances.addAll(plugins.instances);
+	}
 }
