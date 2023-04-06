@@ -5,12 +5,14 @@ import static com.fathzer.plugin.loader.Constants.*;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 
+import com.fathzer.plugin.loader.PluginLoader;
 import com.fathzer.plugin.loader.InstanceBuilder;
 import com.fathzer.plugin.loader.Plugins;
 
@@ -19,7 +21,7 @@ class JarLoaderTest {
 	@SuppressWarnings("rawtypes")
 	@Test
 	void test() throws IOException {
-		final JarPluginLoader loader = new JarPluginLoader().withClassNameBuilder(new ManifestAttributeClassNameBuilder("Plugin-Class"));
+		final PluginLoader<Path> loader = new JarPluginLoader().withClassNameBuilder(new ManifestAttributeClassNameBuilder("Plugin-Class"));
 		final Plugins<Supplier> plugins = loader.getPlugins(OK_FILE, Supplier.class);
 		assertEquals("com.fathzer.plugin.loader.test.Plugin",plugins.getInstances().get(0).getClass().getCanonicalName());
 		assertTrue(plugins.getExceptions().isEmpty());
