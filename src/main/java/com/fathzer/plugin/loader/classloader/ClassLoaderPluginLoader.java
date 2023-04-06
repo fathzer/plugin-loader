@@ -35,7 +35,7 @@ public class ClassLoaderPluginLoader extends PluginLoader<ClassLoader> {
 	
 	/**
 	 * {@inheritDoc}
-	 * If source is null, then the {@link Thread#getContextClassLoader() context ClassLoader} of the calling thread is used.
+	 * If that source is null, then the {@link Thread#getContextClassLoader() context ClassLoader} of the calling thread is used.
 	 */
 	@Override
 	public <V> Plugins<V> getPlugins(ClassLoader source, Class<V> aClass) throws IOException {

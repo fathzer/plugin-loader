@@ -37,6 +37,7 @@ import org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement;
 @IgnoreJRERequirement
 public abstract class AbstractPluginsDownloader<T> {
 	private final PluginRegistry<T> registry;
+	private final Class<T> pluginClass;
 	private final URI uri;
 	private final Path localDirectory;
 	private ProxySettings proxy;
@@ -48,8 +49,9 @@ public abstract class AbstractPluginsDownloader<T> {
 	 * @param registry The registry where plugins are loaded.
 	 * @param uri The uri where to load the remote plugin registry.
 	 * @param localDirectory The folder where plugins jar files will be loaded.
+	 * @param The class implemented by the plugins.
 	 */
-	protected AbstractPluginsDownloader(PluginRegistry<T> registry, URI uri, Path localDirectory) {
+	protected AbstractPluginsDownloader(PluginRegistry<T> registry, URI uri, Path localDirectory, Class<T> pluginClass) {
 		if (registry==null) {
 			throw new IllegalArgumentException("registry can't be null");
 		}
@@ -59,9 +61,13 @@ public abstract class AbstractPluginsDownloader<T> {
 		if (localDirectory==null) {
 			throw new IllegalArgumentException("local directory can't be null");
 		}
+		if (pluginClass==null) {
+			throw new IllegalArgumentException("plugin class can't be null");
+		}
 		this.uri = uri;
 		this.localDirectory = localDirectory;
 		this.registry = registry;
+		this.pluginClass = pluginClass;
 	}
 	
 	/** Gets the remote plugin registry URI.
@@ -76,6 +82,13 @@ public abstract class AbstractPluginsDownloader<T> {
 	 */
 	public PluginRegistry<T> getRegistry() {
 		return registry;
+	}
+	
+	/** Gets the class implemented by the plugins.
+	 * @return a Class instance
+	 */
+	protected Class<T> getPluginClass() {
+		return this.pluginClass;
 	}
 	
 	/** Gets the folder where plugins jar files are loaded.

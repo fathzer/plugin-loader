@@ -41,7 +41,7 @@ public abstract class PluginLoader<T> {
 		return this;
 	}
 
-	/** Gets the plugins contained in a source
+	/** Gets the plugins contained in a source.
 	 * @param <V> The interface/class of the plugins (all plugins should implement/extends this interface/class).
 	 * @param source The source to scan.
 	 * @param aClass The interface/class implemented/sub-classed by the plugins
