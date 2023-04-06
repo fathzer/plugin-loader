@@ -75,6 +75,5 @@ greetings.forEach(c -> {
 ```
 
 ## TODO
-- Create a ClassLoader based PluginLoader
 - Update documentation
 - Talk about 			<classifier>jdk8</classifier>
