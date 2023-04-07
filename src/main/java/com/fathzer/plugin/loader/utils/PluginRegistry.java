@@ -1,9 +1,12 @@
 package com.fathzer.plugin.loader.utils;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** A class to manage plugins identified by a key String.
  * <br>This class is not thread safe
@@ -28,6 +31,19 @@ public class PluginRegistry<T> {
 	 */
 	public T register(T plugin) {
 		return pluginsMap.put(keyFunction.apply(plugin), plugin);
+	}
+	
+	/** Register a plugins collection.
+	 * @param plugins The plugins to register.
+	 * @return The plugins that were not previously registered for the same key.<br>
+	 * Please note that if <i>plugins</i> contains a new instance of a class already registered with the same key,
+	 * the instance will replace the previous one in the registry, but will not be returned.  
+	 */
+	public List<T> registerAll(Collection<T> plugins) {
+		return plugins.stream().filter(p -> {
+			final T old = register(p);
+			return old==null || !p.getClass().equals(old.getClass());
+		}).collect(Collectors.toList());
 	}
 	
 	/** Gets a plugin by its key.
