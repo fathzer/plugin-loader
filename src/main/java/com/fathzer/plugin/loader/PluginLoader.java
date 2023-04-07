@@ -1,11 +1,10 @@
 package com.fathzer.plugin.loader;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Set;
 
 /** A class able to load plugins from an abstract source.
- * @param T The source type
+ * @param <T> The source type
  */
 public abstract class PluginLoader<T> {
 	private ClassNameBuilder<T> classNameBuilder;
@@ -45,7 +44,7 @@ public abstract class PluginLoader<T> {
 	 * @param <V> The interface/class of the plugins (all plugins should implement/extends this interface/class).
 	 * @param source The source to scan.
 	 * @param aClass The interface/class implemented/sub-classed by the plugins
-	 * @return A {@link Plugins} instance whose class loader is the classLoader returned by {@link #buildClassLoader(Path)}.
+	 * @return A {@link Plugins} instance whose class loader is the classLoader returned by {@link #buildClassLoader(Object)}.
 	 * @throws IOException if a problem occurs while reading the source.
 	 */
 	public <V> Plugins<V> getPlugins(T source, Class<V> aClass) throws IOException {
@@ -56,6 +55,9 @@ public abstract class PluginLoader<T> {
 		return result;
 	}
 	
-	/** Builds the classloader that will be used to load the plugin classes.*/
-	protected abstract ClassLoader buildClassLoader(T context) throws IOException;
+	/** Builds the classloader that will be used to load the plugin classes.
+	 * @param context The context, for example, the path of a jar file.
+	 * @return A classLoader that can load classes from the context.
+	 */
+	protected abstract ClassLoader buildClassLoader(T context);
 }

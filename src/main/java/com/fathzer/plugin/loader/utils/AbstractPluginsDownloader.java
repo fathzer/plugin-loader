@@ -49,7 +49,7 @@ public abstract class AbstractPluginsDownloader<T> {
 	 * @param registry The registry where plugins are loaded.
 	 * @param uri The uri where to load the remote plugin registry.
 	 * @param localDirectory The folder where plugins jar files will be loaded.
-	 * @param The class implemented by the plugins.
+	 * @param pluginClass The class implemented by the plugins.
 	 */
 	protected AbstractPluginsDownloader(PluginRegistry<T> registry, URI uri, Path localDirectory, Class<T> pluginClass) {
 		if (registry==null) {

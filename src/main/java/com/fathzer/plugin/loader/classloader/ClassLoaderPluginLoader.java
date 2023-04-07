@@ -1,7 +1,6 @@
 package com.fathzer.plugin.loader.classloader;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
 import com.fathzer.plugin.loader.PluginLoader;
 import com.fathzer.plugin.loader.Plugins;
@@ -23,9 +22,9 @@ public class ClassLoaderPluginLoader extends PluginLoader<ClassLoader> {
 	}
 	
 	/** Loads plugins using the {@link Thread#getContextClassLoader() context ClassLoader} of the calling thread.
-	 * @param <V>
+	 * @param <V> The plugins type
 	 * @param aClass The interface/class implemented/sub-classed by the plugins
-	 * @return A {@link Plugins} instance whose class loader is the classLoader returned by {@link #buildClassLoader(Path)}.
+	 * @return A {@link Plugins} instance whose class loader is the classLoader returned by {@link #buildClassLoader(Object)}.
 	 * @throws IOException if a problem occurs while reading the source.
 	 * @see #getPlugins(ClassLoader, Class)
 	 */
@@ -43,7 +42,7 @@ public class ClassLoaderPluginLoader extends PluginLoader<ClassLoader> {
 	}
 
 	@Override
-	protected ClassLoader buildClassLoader(ClassLoader context) throws IOException {
+	protected ClassLoader buildClassLoader(ClassLoader context) {
 		return context;
 	}
 }
