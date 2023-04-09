@@ -20,6 +20,10 @@ class ClassLoaderPluginLoaderTest {
 	@Test
 	void test() throws IOException {
 		final ClassLoaderPluginLoader loader = new ClassLoaderPluginLoader();
+		assertThrows(IllegalArgumentException.class, () -> loader.withClassNameBuilder(null));
+		assertThrows(IllegalArgumentException.class, () -> loader.withExceptionConsumer(null));
+		assertThrows(IllegalArgumentException.class, () -> loader.withInstanceBuilder(null));
+		
 		assertThrows (PluginInstantiationException.class, () -> loader.getPlugins(Supplier.class));
 		
 		loader.withClassNameBuilder((context,cls) -> Collections.singleton(MySupplier.class.getCanonicalName()));

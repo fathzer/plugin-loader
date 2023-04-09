@@ -32,7 +32,7 @@ public abstract class PluginLoader<T> {
 	 * @return this
 	 */
 	public PluginLoader<T> withClassNameBuilder(ClassNameBuilder<T> classNameBuilder) {
-		if (this.classNameBuilder==null) {
+		if (classNameBuilder==null) {
 			throw new IllegalArgumentException();
 		}
 		this.classNameBuilder = classNameBuilder;
@@ -44,7 +44,7 @@ public abstract class PluginLoader<T> {
 	 * @return this
 	 */
 	public PluginLoader<T> withInstanceBuilder(InstanceBuilder instanceBuilder) {
-		if (this.instanceBuilder==null) {
+		if (instanceBuilder==null) {
 			throw new IllegalArgumentException();
 		}
 		this.instanceBuilder = instanceBuilder;
@@ -58,7 +58,7 @@ public abstract class PluginLoader<T> {
 	 * @return this
 	 */
 	public PluginLoader<T> withExceptionConsumer(Consumer<PluginInstantiationException> exceptionConsumer) {
-		if (this.exceptionConsumer==null) {
+		if (exceptionConsumer==null) {
 			throw new IllegalArgumentException();
 		}
 		this.exceptionConsumer = exceptionConsumer;
