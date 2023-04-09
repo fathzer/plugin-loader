@@ -3,7 +3,7 @@ package com.fathzer.plugin.loader;
 /** Thrown to indicate that something went wrong during plugin instantiation.
  * 
  */
-public class PluginInstantiationException extends Exception {
+public class PluginInstantiationException extends RuntimeException {
 	private static final long serialVersionUID = 1L;
 
 	/** Constructor.

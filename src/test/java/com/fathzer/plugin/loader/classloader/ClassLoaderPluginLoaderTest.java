@@ -7,11 +7,12 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 
-import com.fathzer.plugin.loader.Plugins;
+import com.fathzer.plugin.loader.PluginInstantiationException;
 import com.fathzer.plugin.loader.utils.FileUtils;
 
 class ClassLoaderPluginLoaderTest {
@@ -19,19 +20,14 @@ class ClassLoaderPluginLoaderTest {
 	@Test
 	void test() throws IOException {
 		final ClassLoaderPluginLoader loader = new ClassLoaderPluginLoader();
-		Plugins<Supplier> plugins = loader.getPlugins(Supplier.class);
-		assertEquals(1, plugins.getExceptions().size());
-		assertTrue(plugins.getInstances().isEmpty());
+		assertThrows (PluginInstantiationException.class, () -> loader.getPlugins(Supplier.class));
 		
 		loader.withClassNameBuilder((context,cls) -> Collections.singleton(MySupplier.class.getCanonicalName()));
-		plugins = loader.getPlugins(null, Supplier.class);
-		assertEquals(1, plugins.getInstances().size());
-		assertTrue(plugins.getExceptions().isEmpty());
+		assertEquals(1, loader.getPlugins(null, Supplier.class).size());
 		
-		plugins = loader.getPlugins(Supplier.class);
-		assertEquals(1, plugins.getInstances().size());
-		assertTrue(plugins.getExceptions().isEmpty());
-		final Class<? extends Supplier> class1 = plugins.getInstances().get(0).getClass();
+		List<Supplier> plugins = loader.getPlugins(Supplier.class);
+		assertEquals(1, plugins.size());
+		final Class<? extends Supplier> class1 = plugins.get(0).getClass();
 		assertEquals(MySupplier.class, class1);
 		
 		final ServiceClassNameBuilder nameBuilder = new ServiceClassNameBuilder();
@@ -39,9 +35,8 @@ class ClassLoaderPluginLoaderTest {
 		loader.withClassNameBuilder(nameBuilder);
 		final ClassLoader cl = new URLClassLoader(new URL[] {FileUtils.getURL(OK_FILE)});
 		plugins = loader.getPlugins(cl, Supplier.class);
-		assertTrue(plugins.getExceptions().isEmpty());
-		assertEquals(1, plugins.getInstances().size());
-		assertEquals("com.fathzer.plugin.loader.test.Plugin", plugins.getInstances().get(0).getClass().getCanonicalName());
+		assertEquals(1, plugins.size());
+		assertEquals("com.fathzer.plugin.loader.test.Plugin", plugins.get(0).getClass().getCanonicalName());
 	}
 
 }

@@ -6,7 +6,9 @@ import static com.fathzer.plugin.loader.Constants.*;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -14,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fathzer.plugin.loader.PluginLoader;
 import com.fathzer.plugin.loader.InstanceBuilder;
-import com.fathzer.plugin.loader.Plugins;
+import com.fathzer.plugin.loader.PluginInstantiationException;
 
 class JarLoaderTest {
 
@@ -22,16 +24,16 @@ class JarLoaderTest {
 	@Test
 	void test() throws IOException {
 		final PluginLoader<Path> loader = new JarPluginLoader().withClassNameBuilder(new ManifestAttributeClassNameBuilder("Plugin-Class"));
-		final Plugins<Supplier> plugins = loader.getPlugins(OK_FILE, Supplier.class);
-		assertEquals("com.fathzer.plugin.loader.test.Plugin",plugins.getInstances().get(0).getClass().getCanonicalName());
-		assertTrue(plugins.getExceptions().isEmpty());
+		final List<Supplier> plugins = loader.getPlugins(OK_FILE, Supplier.class);
+		assertEquals(1, plugins.size());
+		assertEquals("com.fathzer.plugin.loader.test.Plugin",plugins.get(0).getClass().getCanonicalName());
 		
 		// Test other constructor
 		final String param = "parameter";
 		loader.withInstanceBuilder(new OtherInstanceBuilder<String>(param, String.class));
-		final Plugins<Supplier> otherPlugins = loader.getPlugins(OK_FILE, Supplier.class);
-		assertEquals(1, otherPlugins.getInstances().size());
-		assertEquals(param, otherPlugins.getInstances().get(0).get());
+		final List<Supplier> otherPlugins = loader.getPlugins(OK_FILE, Supplier.class);
+		assertEquals(1, otherPlugins.size());
+		assertEquals(param, otherPlugins.get(0).get());
 
 		// Test invalid jar file (empty jar)
 		assertThrows (IOException.class, () -> loader.getPlugins(KO_FILE, Supplier.class));
@@ -43,38 +45,37 @@ class JarLoaderTest {
 		final JarPluginLoader loader = new JarPluginLoader();
 
 		// Test unknown service file
-		Plugins<Function> fplugins = loader.getPlugins(OK_FILE, Function.class);
+		List<Function> fplugins = loader.getPlugins(OK_FILE, Function.class);
 		assertTrue(fplugins.isEmpty());
 
 		// Test unknown constructor
 		final Integer paramInt = Integer.MAX_VALUE;
 		loader.withInstanceBuilder(new OtherInstanceBuilder<Integer>(paramInt, Integer.class));
-		Plugins<Supplier> plugins = loader.getPlugins(OK_FILE, Supplier.class);
-		assertTrue(plugins.getInstances().isEmpty());
-		assertEquals(1, plugins.getExceptions().size());
+		assertThrows(PluginInstantiationException.class, () -> loader.getPlugins(OK_FILE, Supplier.class));
 
 		// Test illegalArgument
 		loader.withInstanceBuilder(new OtherInstanceBuilder<String>(null, String.class));
-		plugins = loader.getPlugins(OK_FILE, Supplier.class);
-		assertTrue(plugins.getInstances().isEmpty());
-		assertEquals(1, plugins.getExceptions().size());
+		assertThrows(PluginInstantiationException.class, () -> loader.getPlugins(OK_FILE, Supplier.class));
 		
 		// Test class name builder & unknown class
 		loader.withClassNameBuilder(new ManifestAttributeClassNameBuilder("Unknown-Plugin-Class"));
-		plugins = loader.getPlugins(OK_FILE, Supplier.class);
-		assertTrue(plugins.getInstances().isEmpty());
-		assertEquals(1, plugins.getExceptions().size());
+		assertThrows(PluginInstantiationException.class, () -> loader.getPlugins(OK_FILE, Supplier.class));
 		
 		// Test class is not assignable
 		loader.withClassNameBuilder((p,c) -> Collections.singleton("com.fathzer.plugin.loader.test.Plugin"));
+		assertThrows(PluginInstantiationException.class, () -> loader.getPlugins(OK_FILE, Function.class));
+		
+		// Test exception consumer
+		final List<PluginInstantiationException> ex = new ArrayList<>();
+		loader.withExceptionConsumer(ex::add);
 		fplugins = loader.getPlugins(OK_FILE, Function.class);
-		assertTrue(fplugins.getInstances().isEmpty());
-		assertEquals(1, fplugins.getExceptions().size());
+		assertTrue(fplugins.isEmpty());
+		assertEquals(1, ex.size());
+		
 
 		// Test class name finder & unknown manifest attribute
 		loader.withClassNameBuilder(new ManifestAttributeClassNameBuilder("Unknown-Attribute"));
-		plugins = loader.getPlugins(OK_FILE, Supplier.class);
-		assertTrue(plugins.isEmpty());
+		assertTrue(loader.getPlugins(OK_FILE, Supplier.class).isEmpty());
 	}
 	
 	private static class OtherInstanceBuilder<P> implements InstanceBuilder {

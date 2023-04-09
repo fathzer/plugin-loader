@@ -1,7 +1,10 @@
 package com.fathzer.plugin.loader;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /** A class able to load plugins from an abstract source.
  * @param <T> The source type
@@ -9,6 +12,7 @@ import java.util.Set;
 public abstract class PluginLoader<T> {
 	private ClassNameBuilder<T> classNameBuilder;
 	private InstanceBuilder instanceBuilder;
+	private Consumer<PluginInstantiationException> exceptionConsumer;
 
 	/** Constructor.
 	 * <br>By default, the plugins are instantiated using their public no argument constructor.
@@ -20,6 +24,7 @@ public abstract class PluginLoader<T> {
 	protected PluginLoader(ClassNameBuilder<T> defaultClassNameBuilder) {
 		this.classNameBuilder = defaultClassNameBuilder;
 		this.instanceBuilder = InstanceBuilder.DEFAULT;
+		this.exceptionConsumer = e -> {throw e;};
 	}
 	
 	/** Sets the class name builder.
@@ -27,6 +32,9 @@ public abstract class PluginLoader<T> {
 	 * @return this
 	 */
 	public PluginLoader<T> withClassNameBuilder(ClassNameBuilder<T> classNameBuilder) {
+		if (this.classNameBuilder==null) {
+			throw new IllegalArgumentException();
+		}
 		this.classNameBuilder = classNameBuilder;
 		return this;
 	}
@@ -36,7 +44,24 @@ public abstract class PluginLoader<T> {
 	 * @return this
 	 */
 	public PluginLoader<T> withInstanceBuilder(InstanceBuilder instanceBuilder) {
+		if (this.instanceBuilder==null) {
+			throw new IllegalArgumentException();
+		}
 		this.instanceBuilder = instanceBuilder;
+		return this;
+	}
+	
+	/** Sets the PluginInstantiation exception consumer.
+	 * <br>When the {@link InstanceBuilder} throws an exception, the exception consumer is called to process the exception.
+	 * <br>The default implementation re-throws the exception. You may provide your own to, for instance, log the error and continue.
+	 * @param exceptionConsumer The new consumer
+	 * @return this
+	 */
+	public PluginLoader<T> withExceptionConsumer(Consumer<PluginInstantiationException> exceptionConsumer) {
+		if (this.exceptionConsumer==null) {
+			throw new IllegalArgumentException();
+		}
+		this.exceptionConsumer = exceptionConsumer;
 		return this;
 	}
 
@@ -44,16 +69,40 @@ public abstract class PluginLoader<T> {
 	 * @param <V> The interface/class of the plugins (all plugins should implement/extends this interface/class).
 	 * @param source The source to scan.
 	 * @param aClass The interface/class implemented/sub-classed by the plugins
-	 * @return A {@link Plugins} instance whose class loader is the classLoader returned by {@link #buildClassLoader(Object)}.
+	 * @return A list of instances whose class loader is the classLoader returned by {@link #buildClassLoader(Object)}.
 	 * @throws IOException if a problem occurs while reading the source.
+	 * @throws PluginInstantiationException if a problem occurs while creating the plugins.
 	 */
-	public <V> Plugins<V> getPlugins(T source, Class<V> aClass) throws IOException {
+	public <V> List<V> getPlugins(T source, Class<V> aClass) throws IOException {
 		final Set<String> classNames = classNameBuilder.get(source, aClass);
 		final ClassLoader loader = classNames.isEmpty() ? null : buildClassLoader(source);
-		final Plugins<V> result = new Plugins<>(aClass);
-		classNames.forEach(c -> result.add(loader, c, instanceBuilder));
+		final List<V> result = new ArrayList<>();
+		classNames.forEach(c -> {
+			try {
+				result.add(build(loader, c, aClass));
+			} catch(PluginInstantiationException e) {
+				exceptionConsumer.accept(e);
+			}
+		});
 		return result;
 	}
+	
+	@SuppressWarnings("unchecked")
+	private <V> V build(ClassLoader loader, String className, Class<V> aClass) {
+		try {
+			final Class<?> pluginClass = loader.loadClass(className);
+			if (aClass.isAssignableFrom(pluginClass)) {
+				return (V)instanceBuilder.get(pluginClass);
+			} else {
+				throw new PluginInstantiationException(className+" is not a "+aClass.getCanonicalName()+" instance");
+			}
+		} catch (PluginInstantiationException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new PluginInstantiationException(e);
+		}
+	}
+
 	
 	/** Builds the classloader that will be used to load the plugin classes.
 	 * @param context The context, for example, the path of a jar file.

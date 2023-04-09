@@ -1,11 +1,12 @@
 package com.fathzer.plugin.loader.classloader;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.fathzer.plugin.loader.PluginLoader;
-import com.fathzer.plugin.loader.Plugins;
 import com.fathzer.plugin.loader.ClassNameBuilder;
 import com.fathzer.plugin.loader.InstanceBuilder;
+import com.fathzer.plugin.loader.PluginInstantiationException;
 
 /** A class able to load plugins from jar files contained in a folder.
  */
@@ -24,11 +25,12 @@ public class ClassLoaderPluginLoader extends PluginLoader<ClassLoader> {
 	/** Loads plugins using the {@link Thread#getContextClassLoader() context ClassLoader} of the calling thread.
 	 * @param <V> The plugins type
 	 * @param aClass The interface/class implemented/sub-classed by the plugins
-	 * @return A {@link Plugins} instance whose class loader is the classLoader returned by {@link #buildClassLoader(Object)}.
+	 * @return A List of instances whose class loader is the classLoader returned by {@link #buildClassLoader(Object)}.
 	 * @throws IOException if a problem occurs while reading the source.
+	 * @throws PluginInstantiationException if a problem occurs while creating the plugins.
 	 * @see #getPlugins(ClassLoader, Class)
 	 */
-	public <V> Plugins<V> getPlugins(Class<V> aClass) throws IOException {
+	public <V> List<V> getPlugins(Class<V> aClass) throws IOException, PluginInstantiationException {
 		return getPlugins(null, aClass);
 	}
 	
@@ -37,7 +39,7 @@ public class ClassLoaderPluginLoader extends PluginLoader<ClassLoader> {
 	 * If that source is null, then the {@link Thread#getContextClassLoader() context ClassLoader} of the calling thread is used.
 	 */
 	@Override
-	public <V> Plugins<V> getPlugins(ClassLoader source, Class<V> aClass) throws IOException {
+	public <V> List<V> getPlugins(ClassLoader source, Class<V> aClass) throws IOException, PluginInstantiationException {
 		return super.getPlugins(source==null ? Thread.currentThread().getContextClassLoader() : source, aClass);
 	}
 
