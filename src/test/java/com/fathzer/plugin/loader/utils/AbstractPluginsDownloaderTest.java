@@ -14,7 +14,6 @@ import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -218,7 +217,9 @@ class AbstractPluginsDownloaderTest {
 
 		assertTrue(Files.deleteIfExists(dir), "Problem while deleting temp dir");
 		downloader.clean(); // Test no exception is thrown
-		Path path = downloader.download(server.url(PLUGINS_JAR_URI_PATH).uri());
+		final URI uri = server.url(PLUGINS_JAR_URI_PATH).uri();
+		final Path path = downloader.getDownloadTarget(uri);
+		downloader.download(uri, path);
 		assertTrue(Files.isRegularFile(path));
 		assertEquals(FAKE_JAR_FILE_CONTENT, Files.readAllLines(path).get(0));
 	}
@@ -228,15 +229,15 @@ class AbstractPluginsDownloaderTest {
 		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(new PluginRegistry<>(Object::toString), server.url(REGISTRY_PATH).uri(), dir);
 		final URI existingURI = server.url(PLUGINS_JAR_URI_PATH).uri();
 		clearRequests();
-		Path path = downloader.download(existingURI);
+		Path path = downloader.getDownloadTarget(existingURI);
+		downloader.download(existingURI, path);
 		assertTrue(Files.isRegularFile(path));
 		assertEquals(FAKE_JAR_FILE_CONTENT, Files.readAllLines(path).get(0));
 		
 		// Test already downloaded jar is not reloaded
-		final FileTime lastModifiedTime = Files.getLastModifiedTime(path);
-		Path path2 = downloader.download(existingURI);
+		Path path2 = downloader.getDownloadTarget(existingURI);
 		assertEquals(path, path2);
-		assertEquals(lastModifiedTime, Files.getLastModifiedTime(path));
+		assertFalse(downloader.shouldLoad(existingURI, path2));
 		
 		RecordedRequest request = server.takeRequest();
 		assertEquals(JAR_HEADER_VALUE, request.getHeader(CUSTOM_HEADER));
@@ -245,7 +246,9 @@ class AbstractPluginsDownloaderTest {
 		assertFalse(Files.isRegularFile(path));
 
 		final URI missingURI = server.url("/plugins/missing.jar").uri();
-		assertThrows(IOException.class, ()->downloader.download(missingURI));
+		final Path path3 = downloader.getDownloadTarget(missingURI);
+		assertThrows(IOException.class, ()->downloader.download(missingURI, path3));
+		assertFalse(Files.isRegularFile(path3));
 	}
 
 	private void clearRequests() throws InterruptedException {

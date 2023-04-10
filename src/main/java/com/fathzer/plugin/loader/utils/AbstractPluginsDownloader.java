@@ -67,14 +67,14 @@ public abstract class AbstractPluginsDownloader<T> {
 	/** Gets the remote plugin registry URI.
 	 * @return The URI passed to the constructor.
 	 */
-	public URI getUri() {
+	protected URI getUri() {
 		return uri;
 	}
 	
 	/** Gets the plugin registry.
 	 * @return The PluginRegistry passed to the constructor.
 	 */
-	public PluginRegistry<T> getRegistry() {
+	protected PluginRegistry<T> getRegistry() {
 		return registry;
 	}
 	
@@ -139,7 +139,11 @@ public abstract class AbstractPluginsDownloader<T> {
 		final Set<URI> toDownload = Arrays.stream(keys).map(remoteRegistry::get).collect(Collectors.toSet());
 		final List<Path> paths = new ArrayList<>(toDownload.size());
 		for (URI current : toDownload) {
-			paths.add(download(current));
+			final Path file = getDownloadTarget(current);
+			paths.add(file);
+			if (shouldLoad(uri, file)) {
+				download(current, file);
+			}
 		}
 		load(paths);
 		checkMissingKeys(Arrays.stream(keys), s -> this.registry.get(s)==null," loaded plugins");
@@ -170,23 +174,22 @@ public abstract class AbstractPluginsDownloader<T> {
 
 	/** Downloads an URI to a file.
 	 * @param uri The uri to download
+	 * @param path The local path where the file should be downloaded (the one returned by {@link #getDownloadTarget(URI)}.
+	 * There's no guarantee that the directory that contains path is created. If not, this method should create it.
 	 * @return The path where the URI body was downloaded.
 	 * @throws IOException if something went wrong
 	 */
-	protected Path download(URI uri) throws IOException {
-		final Path file = getDownloadTarget(uri);
-		if (shouldLoad(uri, file)) {
-			final HttpRequest request = getJarRequestBuilder(uri).build();
-			if (!Files.exists(localDirectory)) {
-				Files.createDirectories(localDirectory);
-			}
-			final BodyHandler<Path> bodyHandler = info -> info.statusCode() == 200 ? BodySubscribers.ofFile(file) : BodySubscribers.replacing(Paths.get("/NULL"));
-			final HttpResponse<Path> response = call(request, bodyHandler);
-			if (response.statusCode()!=200) {
-				throw new IOException(String.format("Unexpected status code %d received while downloading %s", response.statusCode(), uri));
-			}
+	protected void download(URI uri, Path path) throws IOException {
+		final Path parent = path.getParent();
+		if (!Files.exists(parent)) {
+			Files.createDirectories(parent);
 		}
-		return file;
+		final HttpRequest request = getJarRequestBuilder(uri).build();
+		final BodyHandler<Path> bodyHandler = info -> info.statusCode() == 200 ? BodySubscribers.ofFile(path) : BodySubscribers.replacing(Paths.get("/NULL"));
+		final HttpResponse<Path> response = call(request, bodyHandler);
+		if (response.statusCode()!=200) {
+			throw new IOException(String.format("Unexpected status code %d received while downloading %s", response.statusCode(), uri));
+		}
 	}
 	
 	private <V> HttpResponse<V> call(HttpRequest request, BodyHandler<V> handler) throws IOException {
