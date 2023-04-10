@@ -176,7 +176,6 @@ public abstract class AbstractPluginsDownloader<T> {
 	 * @param uri The uri to download
 	 * @param path The local path where the file should be downloaded (the one returned by {@link #getDownloadTarget(URI)}.
 	 * There's no guarantee that the directory that contains path is created. If not, this method should create it.
-	 * @return The path where the URI body was downloaded.
 	 * @throws IOException if something went wrong
 	 */
 	protected void download(URI uri, Path path) throws IOException {
