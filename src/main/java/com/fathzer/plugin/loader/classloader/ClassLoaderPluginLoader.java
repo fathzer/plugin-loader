@@ -30,7 +30,7 @@ public class ClassLoaderPluginLoader extends PluginLoader<ClassLoader> {
 	 * @throws PluginInstantiationException if a problem occurs while creating the plugins.
 	 * @see #getPlugins(ClassLoader, Class)
 	 */
-	public <V> List<V> getPlugins(Class<V> aClass) throws IOException, PluginInstantiationException {
+	public <V> List<V> getPlugins(Class<V> aClass) throws IOException {
 		return getPlugins(null, aClass);
 	}
 	
@@ -39,7 +39,7 @@ public class ClassLoaderPluginLoader extends PluginLoader<ClassLoader> {
 	 * If that source is null, then the {@link Thread#getContextClassLoader() context ClassLoader} of the calling thread is used.
 	 */
 	@Override
-	public <V> List<V> getPlugins(ClassLoader source, Class<V> aClass) throws IOException, PluginInstantiationException {
+	public <V> List<V> getPlugins(ClassLoader source, Class<V> aClass) throws IOException {
 		return super.getPlugins(source==null ? Thread.currentThread().getContextClassLoader() : source, aClass);
 	}
 

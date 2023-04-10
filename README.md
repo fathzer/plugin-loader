@@ -12,11 +12,13 @@ From the technical point of view, the plugin should implement an interface (or e
 Usually, the plugin can be stored in a jar file, but you can imagine loading it from the network.
 
 This library helps application developper's to manage plugins in their application.  
-It provides an abstraction of the process of loading plugins and a concrete implementation to load plugins stored in jar files.
+It provides an abstraction of the process of loading plugins and concrete implementations to load plugins stored in jar files.  
+Unlike [java.util.ServiceLoader](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ServiceLoader.html), it allows to customize error management and how plugin classes are discovered and instantiated.
 
 The [plugin-loader-example](https://github.com/fathzer/plugin-loader/tree/main/plugin-loader-example) folder contains an example of jar plugin implementation and loading.
 
-It requires java 8+
+It requires java 11+.  
+Nevertheless, a variant of this library is available for Java 8 users. They have to use the 'jdk8' [maven classifier](https://www.baeldung.com/maven-artifact-classifiers#bd-3-consuming-jar-artifact-of-a-specific-java-version) in their dependency. Only the com.fathzer.plugin.loader.utils.AbstractPluginDownloader class is not available in this variant.
 
 ## How to use the plugin loader with jar files
 
@@ -27,6 +29,7 @@ It's a good practice to define this interface in a library different from the ap
 Here is the example:
 
 ```java
+package com.myapp;
 public interface AppPlugin {
     String getGreeting();
 }
@@ -47,33 +50,24 @@ public class MyPlugin implements AppPlugin {
 ```
 
 You should package the class in a jar file.  
-As the plugin can be complex, the jar file can contains many classes. So, you have to define which class implements the plugin interface in a manifest attribute of the jar.  
-By default *Plugin-Class* attribute is used. See [pom.xml of plugin example](https://github.com/fathzer/plugin-loader/blob/main/plugin-loader-example/plugin-loader-example-plugin/pom.xml) to view how to do it with Maven.
+As the plugin can be complex, the jar file can contains many classes. So, you have to define which class implements the plugin interface. The standard way is to add a resource file in META-INF/services. In this example, its path should be META-INF/services/com.myapp.AppPlugin and it should contain the canonical name of every plugin implementation classes (see [ServiceLoader documentation](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ServiceLoader.html) to have the exact format of the file).  
 
 ### Finally load the plugin in your application
 
-The **JarPluginLoader** ([Javadoc is here](https://javadoc.io/doc/com.fathzer/plugin-loader)) class allows you to load the plugins contained in a local folder.
+com.fathzer.plugin.loader.PluginLoader implementations allow you to get the plugin in your application.
 
-Here is an example:
+Here is an example that loads the plugins contained in a local jar file:
 
 ```java
-final JarPluginLoader loader = new JarPluginLoader();
-// Loads all the plugins at first level inside the pluginRepository folder.
-List<PlugInContainer<AppPlugin>> greetings = loader.getPlugins(pluginRepository, 1, AppPlugin.class);
-greetings.forEach(c -> {
-	// For each plugin
-	final AppPlugin p = c.get();
-	if (p==null) {
-		// An error occurred while loading the plugin.
-		final File file = ((JarPlugInContainer<AppPlugin>)c).getFile();
-		System.err.println("Unable to load plugin in file "+file+", error is "+c.getException());
-	} else {
-		// The plugin was successfully loaded, use it.
-		System.out.println("Found plugin "+p.getClass()+". It returns "+p.getGreeting());
-	}
-});
+final PluginLoader<Path> loader = new JarPluginLoader();
+final List<AppPlugin> plugins = loader.getPlugins(pluginRepository, AppPlugin.class);
+```
+
+This one loads the plugins available on the classpath
+```java
+final ClassLoaderPluginLoader loader = new ClassLoaderPluginLoader();
+final List<AppPlugin> plugins = loader.getPlugins(AppPlugin.class);
 ```
 
 ## TODO
-- Update documentation
-- Talk about 			<classifier>jdk8</classifier>
+- Adds customization documentation
