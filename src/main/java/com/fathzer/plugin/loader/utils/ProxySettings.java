@@ -6,6 +6,7 @@ import java.net.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.Proxy.Type;
+import java.util.Base64;
 
 /** A class that represents a proxy setting.
  */
@@ -82,6 +83,18 @@ public class ProxySettings {
 	 */
 	public PasswordAuthentication getLogin() {
 		return login;
+	}
+	
+	/** Gets the login converted to a Base64 string.
+	 * <br>The content is <i>user:pwd</i> encoded in base 64. It can be used with "Basic " prefix in "Proxy-Authorization" http header.
+	 * @return a base64 string or null is no login is defined
+	 */
+	public String getBase64Login() {
+		if (login==null) {
+			return null;
+		}
+		final String result = login.getUserName()+":"+String.valueOf(login.getPassword());
+		return new String(Base64.getEncoder().encode(result.getBytes()));
 	}
 	
 	public String toString() {

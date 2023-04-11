@@ -19,7 +19,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -256,9 +255,7 @@ public abstract class AbstractPluginsDownloader<T> {
 				  .version(HttpClient.Version.HTTP_2)
 				  .GET();
 		if (proxy!=null && proxy.getLogin()!=null) {
-			final String login = proxy.getLogin().getUserName()+":"+String.valueOf(proxy.getLogin().getPassword());
-			final String encoded = new String(Base64.getEncoder().encode(login.getBytes()));
-            builder.setHeader("Proxy-Authorization", "Basic " + encoded);
+            builder.setHeader("Proxy-Authorization", "Basic " + proxy.getBase64Login());
 		}
 		return builder;
 	}
