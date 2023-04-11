@@ -11,13 +11,9 @@ import java.util.Base64;
 /** A class that represents a proxy setting.
  */
 public class ProxySettings {
-	private String host;
-	private int port;
-	private PasswordAuthentication login;
-	
-	private ProxySettings() {
-		// To make it compatible with jackson databind deserialization
-	}
+	private final String host;
+	private final int port;
+	private final PasswordAuthentication login;
 	
 	/** Constructor.
 	 * @param host The proxy's host name
@@ -39,22 +35,20 @@ public class ProxySettings {
 		if (proxy==null || proxy.trim().isEmpty()) {
 			return null;
 		}
-		final ProxySettings result = new ProxySettings();
 		try {
 			final URI uri = new URI("http://"+proxy);
-			result.host = uri.getHost();
-			if (result.host==null) {
+			final String host = uri.getHost();
+			if (host==null) {
 				throw new IllegalArgumentException("missing host");
 			}
-			result.port = uri.getPort();
-			if (result.port<=0) {
+			final int port = uri.getPort();
+			if (port<=0) {
 				throw new IllegalArgumentException("missing port");
 			}
-			result.login = LoginParser.fromString(uri.getUserInfo());
+			return new ProxySettings(host, port, LoginParser.fromString(uri.getUserInfo()));
 		} catch (URISyntaxException e) {
 			throw new IllegalArgumentException("argument should be of the form [user:pwd@]host:port",e);
 		}
-		return result;
 	}
 
 	/** Converts this to a java.net.Proxy instance.
@@ -85,6 +79,13 @@ public class ProxySettings {
 		return login;
 	}
 	
+	/** Gets the proxy's address.
+	 * @return an InetSocketAddress
+	 */
+	public InetSocketAddress getAddress() {
+		return new InetSocketAddress(host, port);
+	}
+	
 	/** Gets the login converted to a Base64 string.
 	 * <br>The content is <i>user:pwd</i> encoded in base 64. It can be used with "Basic " prefix in "Proxy-Authorization" http header.
 	 * @return a base64 string or null is no login is defined
@@ -97,6 +98,7 @@ public class ProxySettings {
 		return new String(Base64.getEncoder().encode(result.getBytes()));
 	}
 	
+	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 		if (this.login!=null) {
