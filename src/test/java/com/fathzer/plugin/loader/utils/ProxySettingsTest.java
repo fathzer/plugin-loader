@@ -43,6 +43,7 @@ class ProxySettingsTest {
 		assertEquals("host", settings.getHost());
 		assertEquals(3128, settings.getPort());
 		assertEquals("host:3128", settings.toString());
+		assertNull(settings.getBase64Login());
 		
 		InetSocketAddress proxy = (InetSocketAddress) ProxySettings.fromString("127.0.0.1:3128").toProxy().address();
 		assertEquals(3128, proxy.getPort());
