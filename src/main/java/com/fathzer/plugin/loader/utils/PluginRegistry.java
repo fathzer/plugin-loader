@@ -46,6 +46,14 @@ public class PluginRegistry<T> {
 		}).collect(Collectors.toList());
 	}
 	
+	/** Unregister the plugin registered with a key.
+	 * @param key The key that was registered.
+	 * @return The plugin that was registered with that key. Null if the key is unknown.
+	 */
+	public T unregister(String key) {
+		return pluginsMap.remove(key);
+	}
+	
 	/** Gets a plugin by its key.
 	 * @param key The plugin's key
 	 * @return The plugin or null if the plugin does not exists.

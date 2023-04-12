@@ -55,5 +55,8 @@ class PluginRegistryTest {
 		assertTrue(newOnes.contains(otherFakePlugin));
 		assertTrue(newOnes.contains(cFakePlugin));
 		assertFalse(newOnes.contains(bFakePlugin));
+		
+		assertEquals(cFakePlugin, registry.unregister("c"));
+		assertNull(registry.get("c"));
 	}
 }
