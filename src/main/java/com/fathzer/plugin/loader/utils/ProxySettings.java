@@ -79,13 +79,6 @@ public class ProxySettings {
 		return login;
 	}
 	
-	/** Gets the proxy's address.
-	 * @return an InetSocketAddress
-	 */
-	public InetSocketAddress getAddress() {
-		return new InetSocketAddress(host, port);
-	}
-	
 	/** Gets the login converted to a Base64 string.
 	 * <br>The content is <i>user:pwd</i> encoded in base 64. It can be used with "Basic " prefix in "Proxy-Authorization" http header.
 	 * @return a base64 string or null is no login is defined
