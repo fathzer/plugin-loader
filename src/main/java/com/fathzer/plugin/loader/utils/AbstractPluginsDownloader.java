@@ -32,10 +32,9 @@ import org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement;
 
 /** A class that downloads plugins from an Internet remote repository to a local folder.
  * <br><b>WARNING</b>: This class requires a Java 11+ JVM and is not available in java 8 distribution!
- * @param <T> The plugins type
  */
 @IgnoreJRERequirement
-public abstract class AbstractPluginsDownloader<T> {
+public abstract class AbstractPluginsDownloader {
 	private final URI uri;
 	private final Path localDirectory;
 	private ProxySettings proxy;
@@ -113,12 +112,12 @@ public abstract class AbstractPluginsDownloader<T> {
 		return false;
 	}
 	
-	/** Search for plugin keys in remote repository, then loads the corresponding jars.
+	/** Search for plugin keys in remote repository, then downloads the corresponding jars.
 	 * @param keys The plugin's keys to search
 	 * @throws IOException If something went wrong
 	 * @return The paths of downloaded files.
 	 */
-	public Collection<Path> load(String... keys) throws IOException {
+	public Collection<Path> download(String... keys) throws IOException {
 		if (keys.length==0) {
 			return Collections.emptyList();
 		}
@@ -129,7 +128,7 @@ public abstract class AbstractPluginsDownloader<T> {
 		for (URI current : toDownload) {
 			final Path file = getDownloadTarget(current);
 			if (shouldLoad(uri, file)) {
-				download(current, file);
+				downloadFile(current, file);
 				paths.add(file);
 			}
 		}
@@ -159,7 +158,7 @@ public abstract class AbstractPluginsDownloader<T> {
 	 * There's no guarantee that the directory that contains path is created. If not, this method should create it.
 	 * @throws IOException if something went wrong
 	 */
-	protected void download(URI uri, Path path) throws IOException {
+	protected void downloadFile(URI uri, Path path) throws IOException {
 		final Path parent = path.getParent();
 		if (!Files.exists(parent)) {
 			Files.createDirectories(parent);
