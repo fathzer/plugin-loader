@@ -56,7 +56,13 @@ class PluginRegistryTest {
 		assertTrue(newOnes.contains(cFakePlugin));
 		assertFalse(newOnes.contains(bFakePlugin));
 		
+		// Test registry.getFunction
+		assertEquals("a", registry.getKeyFunction().apply(otherFakePlugin));
+
+		
 		assertEquals(cFakePlugin, registry.unregister("c"));
 		assertNull(registry.get("c"));
+		
+		assertThrows(IllegalArgumentException.class, () -> new PluginRegistry<>(null));
 	}
 }

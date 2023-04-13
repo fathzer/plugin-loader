@@ -123,7 +123,7 @@ public abstract class AbstractPluginsDownloader<T> {
 			return Collections.emptyList();
 		}
 		final Map<String, URI> remoteRepository = getURIMap();
-		checkMissingKeys(Arrays.stream(keys), k -> !remoteRepository.containsKey(k)," remote repository");
+		checkMissingKeys(Arrays.stream(keys), k -> !remoteRepository.containsKey(k));
 		final Set<URI> toDownload = Arrays.stream(keys).map(remoteRepository::get).collect(Collectors.toSet());
 		final List<Path> paths = new ArrayList<>(toDownload.size());
 		for (URI current : toDownload) {
@@ -185,10 +185,10 @@ public abstract class AbstractPluginsDownloader<T> {
 	 * @param keys The keys to check.
 	 * @throws IllegalArgumentException if some keys are missing
 	 */
-	private void checkMissingKeys(Stream<String> keys, Predicate<String> missingDetector, String container) {
+	private void checkMissingKeys(Stream<String> keys, Predicate<String> missingDetector) {
 		final Set<String> missing = keys.filter(missingDetector).collect(Collectors.toSet());
 		if (!missing.isEmpty()) {
-			throw new IllegalArgumentException(String.format("Unable to find the following %s in %s: %s", pluginTypeWording, container, missing));
+			throw new IllegalArgumentException(String.format("Unable to find the following %s in remote repository: %s", pluginTypeWording, missing));
 		}
 	}
 	
