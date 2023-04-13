@@ -21,10 +21,20 @@ public class PluginRegistry<T> {
 	 * @param keyFunction A function that get the plugin's key.
 	 */
 	public PluginRegistry(Function<T, String> keyFunction) {
+		if (keyFunction==null) {
+			throw new IllegalArgumentException();
+		}
 		this.pluginsMap = new HashMap<>();
 		this.keyFunction = keyFunction;
 	}
-	
+
+	/** Gets the key function passed to the constructor.
+	 * @return A function that gets the key of a T instance
+	 */
+	public Function<T, String> getKeyFunction() {
+		return keyFunction;
+	}
+
 	/** Register a plugin.
 	 * @param plugin The plugin to register.
 	 * @return The plugin previously registered for the same key. Null if no plugin was registered for that key.
@@ -65,7 +75,7 @@ public class PluginRegistry<T> {
 	/** Gets all available plugins.
 	 * @return An unmodifiable map. Please note the returned map will reflect changes in this registry. If a plugin is added, it will appear in the returned map.
 	 */
-	public Map<String, T> getLoaded() {
+	public Map<String, T> getRegistered() {
 		return Collections.unmodifiableMap(pluginsMap);
 	}
 }

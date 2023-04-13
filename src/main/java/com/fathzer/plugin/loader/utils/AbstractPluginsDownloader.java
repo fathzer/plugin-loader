@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,13 +30,12 @@ import java.util.stream.Stream;
 
 import org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement;
 
-/** A class that loads plugins from an Internet remote repository.
+/** A class that downloads plugins from an Internet remote repository to a local folder.
  * <br><b>WARNING</b>: This class requires a Java 11+ JVM and is not available in java 8 distribution!
  * @param <T> The plugins type
  */
 @IgnoreJRERequirement
 public abstract class AbstractPluginsDownloader<T> {
-	private final PluginRegistry<T> registry;
 	private final URI uri;
 	private final Path localDirectory;
 	private ProxySettings proxy;
@@ -44,14 +44,10 @@ public abstract class AbstractPluginsDownloader<T> {
 	private HttpClient httpClient;
 	
 	/** Constructor.
-	 * @param registry The registry where plugins are loaded.
-	 * @param uri The uri where to load the remote plugin registry.
+	 * @param uri The uri where to load the remote plugin .
 	 * @param localDirectory The folder where plugins jar files will be loaded.
 	 */
-	protected AbstractPluginsDownloader(PluginRegistry<T> registry, URI uri, Path localDirectory) {
-		if (registry==null) {
-			throw new IllegalArgumentException("registry can't be null");
-		}
+	protected AbstractPluginsDownloader(URI uri, Path localDirectory) {
 		if (uri==null) {
 			throw new IllegalArgumentException("uri can't be null");
 		}
@@ -60,21 +56,13 @@ public abstract class AbstractPluginsDownloader<T> {
 		}
 		this.uri = uri;
 		this.localDirectory = localDirectory;
-		this.registry = registry;
 	}
 	
-	/** Gets the remote plugin registry URI.
+	/** Gets the remote plugin repository URI.
 	 * @return The URI passed to the constructor.
 	 */
 	protected URI getUri() {
 		return uri;
-	}
-	
-	/** Gets the plugin registry.
-	 * @return The PluginRegistry passed to the constructor.
-	 */
-	protected PluginRegistry<T> getRegistry() {
-		return registry;
 	}
 	
 	/** Gets the folder where plugins jar files are loaded.
@@ -84,7 +72,7 @@ public abstract class AbstractPluginsDownloader<T> {
 		return localDirectory;
 	}
 
-	/** Sets the proxy used to connect with remote registry.
+	/** Sets the proxy used to connect with remote repository.
 	 * @param proxy The proxy (null, which is the default, to use no proxy)
 	 */
 	public void setProxy(ProxySettings proxy) {
@@ -125,34 +113,28 @@ public abstract class AbstractPluginsDownloader<T> {
 		return false;
 	}
 	
-	/** Search for plugins in remote repository, then loads them and verify they are not missing anymore.
+	/** Search for plugin keys in remote repository, then loads the corresponding jars.
 	 * @param keys The plugin's keys to search
 	 * @throws IOException If something went wrong
+	 * @return The paths of downloaded files.
 	 */
-	public void load(String... keys) throws IOException {
+	public Collection<Path> load(String... keys) throws IOException {
 		if (keys.length==0) {
-			return;
+			return Collections.emptyList();
 		}
-		final Map<String, URI> remoteRegistry = getURIMap();
-		checkMissingKeys(Arrays.stream(keys), k -> !remoteRegistry.containsKey(k)," remote repository");
-		final Set<URI> toDownload = Arrays.stream(keys).map(remoteRegistry::get).collect(Collectors.toSet());
+		final Map<String, URI> remoteRepository = getURIMap();
+		checkMissingKeys(Arrays.stream(keys), k -> !remoteRepository.containsKey(k)," remote repository");
+		final Set<URI> toDownload = Arrays.stream(keys).map(remoteRepository::get).collect(Collectors.toSet());
 		final List<Path> paths = new ArrayList<>(toDownload.size());
 		for (URI current : toDownload) {
 			final Path file = getDownloadTarget(current);
-			paths.add(file);
 			if (shouldLoad(uri, file)) {
 				download(current, file);
+				paths.add(file);
 			}
 		}
-		load(paths);
-		checkMissingKeys(Arrays.stream(keys), s -> this.registry.get(s)==null," loaded plugins");
+		return paths;
 	}
-	
-	/** Loads local plugins files downloaded from remote repository in the registry passed to the constructor. 
-	 * @param paths The file to load in the registry
-	 * @throws IOException If something went wrong
-	 */
-	protected abstract void load(Collection<Path> paths) throws IOException;
 	
 	/** Gets the local path where a remote jar should be downloaded. 
 	 * @param uri The uri of a remote jar
@@ -210,27 +192,27 @@ public abstract class AbstractPluginsDownloader<T> {
 		}
 	}
 	
-	/** Gets the content of the remote registry.
+	/** Gets the content of the remote repository.
 	 * <br>This method gets an input stream from the uri passed to this class constructor, then pass this input stream to {@link #getURIMap(InputStream)} and return its result.
 	 * @return A key to uri map.
 	 * @throws IOException If something went wrong
 	 */
 	protected Map<String, URI> getURIMap() throws IOException {
-		final HttpRequest request = getRegistryRequestBuilder().build();
+		final HttpRequest request = getRepositoryRequestBuilder().build();
 		final HttpResponse<InputStream> response = call(request, BodyHandlers.ofInputStream());
 		if (response.statusCode()!=200) {
-			throw new IOException(String.format("Unexpected status code %d received while downloading %s registry", response.statusCode(), pluginTypeWording));
+			throw new IOException(String.format("Unexpected status code %d received while downloading %s repository", response.statusCode(), pluginTypeWording));
 		}
 		try (InputStream in = response.body()) {
 			return getURIMap(in);
 		}
 	}
 	
-	/** Gets the builder of the request used to query the registry.
+	/** Gets the builder of the request used to query the repository.
 	 * <br>A sub-class can override this method to, for example, add headers to the request.
 	 * @return a request builder that build the request.
 	 */
-	protected HttpRequest.Builder getRegistryRequestBuilder() {
+	protected HttpRequest.Builder getRepositoryRequestBuilder() {
 		return getRequestBuilder().uri(uri);
 	}
 

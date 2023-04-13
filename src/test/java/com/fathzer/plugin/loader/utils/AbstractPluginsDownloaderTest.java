@@ -1,8 +1,6 @@
 package com.fathzer.plugin.loader.utils;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,19 +34,18 @@ class AbstractPluginsDownloaderTest {
 	private static final String PLUGINS_JAR_URI_PATH = "/plugins/test.jar";
 	private static final String MISSING_JAR_PLUGIN_KEY = "missing";
 	private static final String VALID_PLUGIN_KEY = "test";
-	private static final String REGISTRY_OK_CONTENT = "registryOk";
-	private static final String REGISTRY_PATH = "/registry";
+	private static final String REPOSITORY_OK_CONTENT = "repositoryOk";
+	private static final String REPOSITORY_PATH = "/repository";
 	private static final String FAKE_JAR_FILE_CONTENT = "A fake jar file";
 	private static final String CUSTOM_HEADER = "myHeader";
-	private static final String REGISTRY_HEADER_VALUE = "registry";
+	private static final String REPOSITORY_HEADER_VALUE = "repository";
 	private static final String JAR_HEADER_VALUE = "jar";
 
 	private static class TestPluginDownloader<T> extends AbstractPluginsDownloader<T> {
 		private final Map<String,URI> map;
-		private Collection<Path> lastPathsLoaded;
 		
-		private TestPluginDownloader(PluginRegistry<T> registry, URI uri, Path localDirectory) {
-			super(registry, uri, localDirectory);
+		private TestPluginDownloader(URI uri, Path localDirectory) {
+			super(uri, localDirectory);
 			map = new HashMap<>();
 			map.put(VALID_PLUGIN_KEY, getUri().resolve(PLUGINS_JAR_URI_PATH));
 			map.put(MISSING_JAR_PLUGIN_KEY, getUri().resolve("/plugins/missing.jar"));
@@ -57,7 +54,7 @@ class AbstractPluginsDownloaderTest {
 		@Override
 		protected Map<String, URI> getURIMap(InputStream in) throws IOException {
 			final String content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-			if (REGISTRY_OK_CONTENT.equals(content)) {
+			if (REPOSITORY_OK_CONTENT.equals(content)) {
 				return map;
 			} else {
 				throw new IOException(content);
@@ -65,9 +62,9 @@ class AbstractPluginsDownloaderTest {
 		}
 
 		@Override
-		protected HttpRequest.Builder getRegistryRequestBuilder() {
-			final HttpRequest.Builder requestBuilder = super.getRegistryRequestBuilder();
-			requestBuilder.header(CUSTOM_HEADER, REGISTRY_HEADER_VALUE);
+		protected HttpRequest.Builder getRepositoryRequestBuilder() {
+			final HttpRequest.Builder requestBuilder = super.getRepositoryRequestBuilder();
+			requestBuilder.header(CUSTOM_HEADER, REPOSITORY_HEADER_VALUE);
 			return requestBuilder;
 		}
 
@@ -76,11 +73,6 @@ class AbstractPluginsDownloaderTest {
 			final HttpRequest.Builder requestBuilder = super.getJarRequestBuilder(uri);
 			requestBuilder.header(CUSTOM_HEADER, JAR_HEADER_VALUE);
 			return requestBuilder;
-		}
-
-		@Override
-		protected void load(Collection<Path> paths) {
-			this.lastPathsLoaded = paths;
 		}
 	}
 
@@ -92,10 +84,10 @@ class AbstractPluginsDownloaderTest {
 		    @Override
 		    public MockResponse dispatch (RecordedRequest request) throws InterruptedException {
 		        switch (request.getPath()) {
-		            case REGISTRY_PATH:
-		                return new MockResponse().setResponseCode(200).setBody(REGISTRY_OK_CONTENT);
-		            case "/registryKo":
-		                return new MockResponse().setResponseCode(200).setBody("registryKo");
+		            case REPOSITORY_PATH:
+		                return new MockResponse().setResponseCode(200).setBody(REPOSITORY_OK_CONTENT);
+		            case "/repositoryKo":
+		                return new MockResponse().setResponseCode(200).setBody("repositoryKo");
 		            case PLUGINS_JAR_URI_PATH:
 		                return new MockResponse().setResponseCode(200).setBody(FAKE_JAR_FILE_CONTENT);
 		        }
@@ -115,33 +107,28 @@ class AbstractPluginsDownloaderTest {
 	
 	@Test
 	void testWrongConstructorArgs(@TempDir Path dir){
-		final PluginRegistry<Object> plugins = new PluginRegistry<>(Object::toString);
-		final URI uri = server.url(REGISTRY_PATH).uri();
-		assertThrows(IllegalArgumentException.class, () -> new TestPluginDownloader<>(null, uri, dir));
-		assertThrows(IllegalArgumentException.class, () -> new TestPluginDownloader<>(plugins, null, dir));
-		assertThrows(IllegalArgumentException.class, () -> new TestPluginDownloader<>(plugins, uri, null));
+		final URI uri = server.url(REPOSITORY_PATH).uri();
+		assertThrows(IllegalArgumentException.class, () -> new TestPluginDownloader<>(null, dir));
+		assertThrows(IllegalArgumentException.class, () -> new TestPluginDownloader<>(uri, null));
 	}
 
 	
 	@Test
 	void testUnknownURI(@TempDir Path dir) throws IOException {
-		final PluginRegistry<Object> plugins = new PluginRegistry<>(Object::toString);
 		{
-			final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(plugins, server.url("/registryKo").uri(), dir);
+			final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(server.url("/repositoryKo").uri(), dir);
 			assertThrows (IOException.class, () -> downloader.getURIMap());
 		}
 
-		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(plugins, server.url("/registryUnknown").uri(), dir);
+		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(server.url("/repositoryUnknown").uri(), dir);
 		assertThrows (IOException.class, () -> downloader.getURIMap());
 	}
 	
 	@Test
 	void testProxy(@TempDir Path dir) throws Exception {
 		final String proxyAuthHeader = "Proxy-Authorization";
-		@SuppressWarnings("unchecked")
-		final PluginRegistry<Object> registry = mock(PluginRegistry.class);
-		final URI uri = server.url(REGISTRY_PATH).uri();
-		final TestPluginDownloader<Object> downloader = new TestPluginDownloader<>(registry, uri, dir);
+		final URI uri = server.url(REPOSITORY_PATH).uri();
+		final TestPluginDownloader<Object> downloader = new TestPluginDownloader<>(uri, dir);
 		clearRequests();
 		downloader.setProxy(ProxySettings.fromString("a:b@host:3456"));
 		ProxySelector proxy = downloader.getHttpClient().proxy().orElse(null);
@@ -149,14 +136,14 @@ class AbstractPluginsDownloaderTest {
 		Proxy p = proxy.select(uri).get(0);
 		assertEquals(new InetSocketAddress("host",3456), p.address());
 		// Verif proxy authorization is there.
-		HttpRequest request = downloader.getRegistryRequestBuilder().build();
+		HttpRequest request = downloader.getRepositoryRequestBuilder().build();
 		final Optional<String> header = request.headers().firstValue(proxyAuthHeader);
 		assertTrue(header.isPresent());
 		
 		// Test we can revert proxy to null
 		downloader.setProxy(null);
 		assertFalse(downloader.getHttpClient().proxy().isPresent());
-		request = downloader.getRegistryRequestBuilder().build();
+		request = downloader.getRepositoryRequestBuilder().build();
 		assertFalse(request.headers().firstValue(proxyAuthHeader).isPresent());
 
 		// Test with unauthenticated proxy
@@ -165,17 +152,14 @@ class AbstractPluginsDownloaderTest {
 		assertNotNull(proxy);
 		p = proxy.select(uri).get(0);
 		assertEquals(new InetSocketAddress("proxy",4567), p.address());
-		request = downloader.getRegistryRequestBuilder().build();
+		request = downloader.getRepositoryRequestBuilder().build();
 		assertFalse(request.headers().firstValue(proxyAuthHeader).isPresent());
 	}
 
 	@Test
 	void test(@TempDir Path dir) throws Exception {
-		@SuppressWarnings("unchecked")
-		PluginRegistry<Object> registry = mock(PluginRegistry.class);
-		final TestPluginDownloader<Object> downloader = new TestPluginDownloader<>(registry, server.url(REGISTRY_PATH).uri(), dir);
+		final TestPluginDownloader<Object> downloader = new TestPluginDownloader<>(server.url(REPOSITORY_PATH).uri(), dir);
 		
-		assertEquals(registry, downloader.getRegistry());
 		assertEquals(dir, downloader.getLocalDirectory());
 		downloader.setPluginTypeWording("object");
 		assertEquals("object",downloader.getPluginTypeWording());
@@ -185,35 +169,30 @@ class AbstractPluginsDownloaderTest {
 		final Map<String, URI> map = downloader.getURIMap();
 		assertEquals(new HashSet<>(Arrays.asList(VALID_PLUGIN_KEY,MISSING_JAR_PLUGIN_KEY)), map.keySet());
 		RecordedRequest request = server.takeRequest();
-		assertEquals(REGISTRY_HEADER_VALUE,request.getHeader(CUSTOM_HEADER));
+		assertEquals(REPOSITORY_HEADER_VALUE,request.getHeader(CUSTOM_HEADER));
 		assertNull(request.getHeader("Proxy-Authorization"));
 
 		// Test load of a valid key
-		when(registry.get(VALID_PLUGIN_KEY)).thenReturn("ok");
-		downloader.load(VALID_PLUGIN_KEY);
-		// check right paths were passed to registry (a URL classLoader on the right file)
-		assertEquals(1, downloader.lastPathsLoaded.size());
-		final Path path = downloader.lastPathsLoaded.iterator().next();
+		Collection<Path> paths = downloader.load(VALID_PLUGIN_KEY);
+		// check right paths are returned
+		assertEquals(1, paths.size());
+		final Path path = paths.iterator().next();
 		assertTrue(Files.isRegularFile(path));
 		assertEquals(FAKE_JAR_FILE_CONTENT, Files.readAllLines(path).get(0));
 		
-		// Test load of a key missing in registry
-		assertThrows(IllegalArgumentException.class, () -> downloader.load("Not in registry"));
+		// Test load of a key missing in repository
+		assertThrows(IllegalArgumentException.class, () -> downloader.load("Not in repository"));
 
-		// Test load of a key in registry, but with missing jar
+		// Test load of a key in repository, but with missing jar
 		assertThrows(IOException.class, () -> downloader.load(MISSING_JAR_PLUGIN_KEY));
 		
 		// Test load nothing doesn't throw exception
-		downloader.load();
-		
-		// Test searched plugin was in repository but not effectively in the repository's jar 
-		when(registry.get(VALID_PLUGIN_KEY)).thenReturn(null);
-		assertThrows(IllegalArgumentException.class, () -> downloader.load(VALID_PLUGIN_KEY));
+		assertTrue(downloader.load().isEmpty());
 	}
 	
 	@Test
 	void testEmptyDir(@TempDir Path dir) throws Exception {
-		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(new PluginRegistry<>(Object::toString), server.url(REGISTRY_PATH).uri(), dir);
+		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(server.url(REPOSITORY_PATH).uri(), dir);
 
 		assertTrue(Files.deleteIfExists(dir), "Problem while deleting temp dir");
 		downloader.clean(); // Test no exception is thrown
@@ -226,7 +205,7 @@ class AbstractPluginsDownloaderTest {
 	
 	@Test
 	void testDownloadAndClean(@TempDir Path dir) throws IOException, InterruptedException {
-		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(new PluginRegistry<>(Object::toString), server.url(REGISTRY_PATH).uri(), dir);
+		final AbstractPluginsDownloader<Object> downloader = new TestPluginDownloader<>(server.url(REPOSITORY_PATH).uri(), dir);
 		final URI existingURI = server.url(PLUGINS_JAR_URI_PATH).uri();
 		clearRequests();
 		Path path = downloader.getDownloadTarget(existingURI);

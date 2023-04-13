@@ -37,7 +37,7 @@ class PluginRegistryTest {
 	@Test
 	void test() {
 		PluginRegistry<Api> registry = new PluginRegistry<>(Api::get);
-		final Map<String, Api> loaded = registry.getLoaded();
+		final Map<String, Api> loaded = registry.getRegistered();
 		assertTrue(loaded.isEmpty());
 		assertNull(registry.register(new FakePlugin("a")));
 		assertFalse(loaded.isEmpty());
@@ -46,7 +46,7 @@ class PluginRegistryTest {
 		assertNull(registry.register(new FakePlugin("b")));
 		assertNotNull(registry.get("b"));
 		
-		assertEquals(new HashSet<>(Arrays.asList("a","b")), registry.getLoaded().keySet());
+		assertEquals(new HashSet<>(Arrays.asList("a","b")), registry.getRegistered().keySet());
 		final OtherFakePlugin otherFakePlugin = new OtherFakePlugin();
 		final FakePlugin bFakePlugin = new FakePlugin("b");
 		final FakePlugin cFakePlugin = new FakePlugin("c");
