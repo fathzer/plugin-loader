@@ -158,7 +158,8 @@ class AbstractPluginsDownloaderTest {
 
 	@Test
 	void test(@TempDir Path dir) throws Exception {
-		final TestPluginDownloader downloader = new TestPluginDownloader(server.url(REPOSITORY_PATH).uri(), dir);
+		final URI uri = server.url(REPOSITORY_PATH).uri();
+		final TestPluginDownloader downloader = new TestPluginDownloader(uri, dir);
 		
 		assertEquals(dir, downloader.getLocalDirectory());
 		downloader.setPluginTypeWording("object");
@@ -179,6 +180,17 @@ class AbstractPluginsDownloaderTest {
 		final Path path = paths.iterator().next();
 		assertTrue(Files.isRegularFile(path));
 		assertEquals(FAKE_JAR_FILE_CONTENT, Files.readAllLines(path).get(0));
+		
+		// Test downloaded list does not change if file is already loaded
+		assertEquals(paths, downloader.download(VALID_PLUGIN_KEY));
+		// Test downloadFile is not called if file exists
+		TestPluginDownloader failDownloader = new TestPluginDownloader(uri, dir) {
+			@Override
+			protected void downloadFile(URI uri, Path path) throws IOException {
+				throw new IllegalStateException("Should not be called");
+			}
+		};
+		assertEquals(paths, failDownloader.download(VALID_PLUGIN_KEY));
 		
 		// Test load of a key missing in repository
 		assertThrows(IllegalArgumentException.class, () -> downloader.download("Not in repository"));

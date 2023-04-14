@@ -112,10 +112,10 @@ public abstract class AbstractPluginsDownloader {
 		return false;
 	}
 	
-	/** Search for plugin keys in remote repository, then downloads the corresponding jars.
+	/** Searches for plugin keys in remote repository, then downloads the corresponding jars.
 	 * @param keys The plugin's keys to search
 	 * @throws IOException If something went wrong
-	 * @return The paths of downloaded files.
+	 * @return The paths of files that contains the jars (including the ones for which {@link #shouldLoad(URI, Path)} returned false
 	 */
 	public Collection<Path> download(String... keys) throws IOException {
 		if (keys.length==0) {
@@ -127,9 +127,9 @@ public abstract class AbstractPluginsDownloader {
 		final List<Path> paths = new ArrayList<>(toDownload.size());
 		for (URI current : toDownload) {
 			final Path file = getDownloadTarget(current);
+			paths.add(file);
 			if (shouldLoad(uri, file)) {
 				downloadFile(current, file);
-				paths.add(file);
 			}
 		}
 		return paths;
