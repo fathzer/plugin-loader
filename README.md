@@ -6,6 +6,14 @@
 # plugin-loader
 A java plugin loader.
 
+## Table of contents
+- [Introduction](#introduction)
+- [How to load plugins from jar files](#how-to-load-plugins-from-jar-files)
+- [How to load plugins from ClassLoader](#how-to-load-plugins-from-classloader)
+- [Working with custom plugins](#working-with-custom-plugins)
+- [A word about error management](#a-word-about-error-management)
+
+## Introduction
 A plugin is a class that is loaded dynamically by an application to give extra functionalities or customization.
 
 From the technical point of view, the plugin should implement an interface (or extends a class) defined by the application.  
@@ -62,8 +70,6 @@ Here is an example that loads the plugins contained in the *pluginFile* local ja
 final PluginLoader<Path> loader = new JarPluginLoader();
 final List<AppPlugin> plugins = loader.getPlugins(pluginFile, AppPlugin.class);
 ```
-
-
 
 
 ## How to load plugins from ClassLoader
