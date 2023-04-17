@@ -1,0 +1,3 @@
+
+	com.fathzer.plugin.loader.classloader.ASupplier  # Strange spaces and tabs to test parsing works
+	

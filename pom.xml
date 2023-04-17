@@ -1,8 +1,14 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.fathzer</groupId>
+	<parent>
+		<groupId>com.fathzer</groupId>
+		<artifactId>parent-pom</artifactId>
+		<version>1.0.6</version>
+	</parent>
 	<artifactId>plugin-loader</artifactId>
-	<version>0.0.1</version>
+	<version>0.0.2</version>
 
 	<name>plugin-loader</name>
 	<description>A java plugin loader.</description>
@@ -13,50 +19,34 @@
 		<connection>https://github.com/fathzer/plugin-loader.git</connection>
 	</scm>
 
-	<licenses>
-		<license>
-			<name>Apache License, Version 2.0</name>
-			<url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-			<distribution>repo</distribution>
-			<comments>A business-friendly OSS license</comments>
-		</license>
-	</licenses>
-
-	<developers>
-		<developer>
-			<id>Fathzer</id>
-			<name>Jean-Marc Astesana</name>
-			<email>admin@fathzer.com</email>
-		</developer>
-	</developers>
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.target>8</maven.compiler.target>
-		<maven.compiler.source>8</maven.compiler.source>
-		<sonar.organization>fathzer</sonar.organization>
-		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+		<jdk8-classes>${project.build.outputDirectory}_jdk8</jdk8-classes>
+		<animal-version>1.23</animal-version>
 	</properties>
 
-	<distributionManagement>
-		<repository>
-			<id>ReleaseFathzer</id>
-			<name>Release fathzer.com</name>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
-		</repository>
-		<snapshotRepository>
-			<id>SnapshotFathzer</id>
-			<name>Snapshot fathzer.com</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-			<uniqueVersion>false</uniqueVersion>
-		</snapshotRepository>
-	</distributionManagement>
-
 	<dependencies>
+		<dependency>
+			<groupId>org.codehaus.mojo</groupId>
+			<artifactId>animal-sniffer-annotations</artifactId>
+			<version>${animal-version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter</artifactId>
 			<version>5.7.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+			<version>5.1.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>mockwebserver</artifactId>
+			<version>4.10.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -65,63 +55,76 @@
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>8</source>
+					<target>8</target>
+					<fork>true</fork>
+				</configuration>
+				<executions>
+					<execution>
+						<id>default-compile</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+						<configuration>
+							<release>11</release>
+						</configuration>
+					</execution>
+					<execution>
+						<id>JDK 8</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+						<configuration>
+							<source>8</source>
+							<target>8</target>
+							<fork>true</fork>
+							<outputDirectory>${jdk8-classes}</outputDirectory>
+							<excludes>
+								<exclude>**/com/fathzer/plugin/loader/utils/AbstractPluginsDownloader.java</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<!-- JUnit 5 requires Surefire version 2.22.0 or higher -->
 				<version>2.22.2</version>
 			</plugin>
 			<plugin>
-				<groupId>org.kohsuke</groupId>
-				<artifactId>pgp-maven-plugin</artifactId>
-				<version>1.1</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>sign</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<!-- For obvious security reasons, keyFile and pass phrase are not provided, 
-						they should be in file present in the user's home directory -->
-					<secretkey>keyfile:${user.home}/fathzer_private_key.asc</secretkey>
-					<passphrase>file:${user.home}/fathzer_key_pwd.txt</passphrase>
-				</configuration>
-			</plugin>
-
-			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>3.2.1</version>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version> 3.2.2</version>
 				<executions>
 					<execution>
-						<id>attach-sources</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.3.1</version>
-				<configuration>
-					<!-- see https://stackoverflow.com/questions/69320220/maven-javadoc-listed-classes-twice -->
-					<sourcepath>${basedir}/src/main/java</sourcepath>
-					<header>${project.version}</header>
-					<footer>${project.version}</footer>
-					<doclint>all</doclint>
-				</configuration>
-				<executions>
-					<execution>
-						<id>javadoc_generation</id>
+						<id>default-package-jdk8</id>
 						<phase>package</phase>
 						<goals>
 							<goal>jar</goal>
 						</goals>
+						<configuration>
+							<classesDirectory>${jdk8-classes}</classesDirectory>
+							<classifier>jdk8</classifier>
+						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>animal-sniffer-maven-plugin</artifactId>
+				<configuration>
+					<signature>
+						<groupId>org.codehaus.mojo.signature</groupId>
+						<artifactId>java18</artifactId>
+						<version>1.0</version>
+					</signature>
+					<ignores>/home/jma/git/plugin-loader/src/main/java/com/fathzer/plugin/loader/utils/AbstractPluginsDownloader.java</ignores>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

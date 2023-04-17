@@ -18,6 +18,7 @@
 					<archive>
 						<manifestEntries>
 							<Plugin-Class>com.fathzer.plugin.loader.test.Plugin</Plugin-Class>
+							<Strange-names> com.fathzer.plugin.loader.test.Plugin	,    , another </Strange-names>
 							<Unknown-Plugin-Class>com.fathzer.plugin.test.UnknownPlugin</Unknown-Plugin-Class>
 							<Wrong-Constructor-Plugin>com.fathzer.plugin.test.WrongConstructorPlugin</Wrong-Constructor-Plugin>
 						</manifestEntries>
