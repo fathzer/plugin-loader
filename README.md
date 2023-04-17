@@ -20,7 +20,7 @@ The [plugin-loader-example](https://github.com/fathzer/plugin-loader/tree/main/p
 It requires java 11+.  
 Nevertheless, a variant of this library is available for Java 8 users. They have to use the 'jdk8' [maven classifier](https://www.baeldung.com/maven-artifact-classifiers#bd-3-consuming-jar-artifact-of-a-specific-java-version) in their dependency. Only the com.fathzer.plugin.loader.utils.AbstractPluginDownloader class is not available in this variant.
 
-## How to use the plugin loader with jar files
+## How to load plugins from jar files
 
 ### First define an interface for your plugin.
 
@@ -54,20 +54,61 @@ As the plugin can be complex, the jar file can contains many classes. So, you ha
 
 ### Finally load the plugin in your application
 
-com.fathzer.plugin.loader.PluginLoader implementations allow you to get the plugin in your application.
+com.fathzer.plugin.loader.jar.JarPluginLoader will allow you to get the plugin in your application.
 
-Here is an example that loads the plugins contained in a local jar file:
+Here is an example that loads the plugins contained in the *pluginFile* local jar file:
 
 ```java
 final PluginLoader<Path> loader = new JarPluginLoader();
-final List<AppPlugin> plugins = loader.getPlugins(pluginRepository, AppPlugin.class);
+final List<AppPlugin> plugins = loader.getPlugins(pluginFile, AppPlugin.class);
 ```
 
-This one loads the plugins available on the classpath
+
+
+
+## How to load plugins from ClassLoader
+JarPluginLoader is not the only way to load plugins. *com.fathzer.plugin.loader.PluginLoader* is an abstract class that can have multiple implementations.  
+Another classical implementation provided by this library is *ClassLoaderPluginLoader*.  
+It allows you to search and load plugins through a class loader.
+
+A typical use is to load the plugins available on the classpath. Here is the code to do that:
 ```java
 final ClassLoaderPluginLoader loader = new ClassLoaderPluginLoader();
 final List<AppPlugin> plugins = loader.getPlugins(AppPlugin.class);
 ```
 
-## TODO
-- Adds customization documentation
+## Working with custom plugins
+The default implementation works with plugin defined as services useable with [ServiceLoader documentation](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ServiceLoader.html), but you can change how the plugins are discovered or how they are instantiated.
+
+The plugin class names are discovered by a ClassNameBuilder. You can change the default one using the PluginLoader.withClassNameBuilder.  
+Here is an example that use a predefined class name:
+```java
+final PluginLoader<ClassLoader> loader = new ClassLoaderPluginLoader();
+loader.withClassNameBuilder((c,v) -> Collections.singleton("com.fathzer.MyPlugin"));
+```
+
+You can also change the way plugins are instantiated using the PluginLoader.withInstanceBuilder method. For instance to use a constructor with argument.  
+Here is an example that uses a constructor with a fixed string argument:
+```java
+final PluginLoader<ClassLoader> loader = new ClassLoaderPluginLoader();
+final String context = ...
+InstanceBuilder ib = new InstanceBuilder() {
+  @Override
+  public <T> T get(Class<T> pluginClass) throws Exception {
+    final Constructor<T> constructor = pluginClass.getConstructor(String.class);
+    return constructor.newInstance(context);
+  }
+};
+loader.withInstanceBuilder(ib);
+```
+
+## A word about error management
+If a problem occurs during plugin instantiation, a *PluginInstantiationException* is throw. This is the default behaviour, but you prefer to log the error and continue to instantiate other plugins contained in a jar.  
+You can simply customize the exception management using the *PluginLoader.withExceptionConsumer* method as in the following example:
+```java
+new ClassLoaderPluginLoader().withExceptionConsumer(e -> log.warn("An error occured while loading plugins", e));
+```
+
+#TODO
+- Get jar files in a directory
+- Plugin registry

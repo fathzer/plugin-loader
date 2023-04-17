@@ -88,10 +88,9 @@ class JarLoaderTest {
 		}
 		
 		@Override
-		@SuppressWarnings("unchecked")
 		public <T> T get(Class<T> pluginClass) throws Exception {
-			final Constructor<?> constructor = pluginClass.getConstructor(aClass);
-			return (T) constructor.newInstance(param);
+			final Constructor<T> constructor = pluginClass.getConstructor(aClass);
+			return constructor.newInstance(param);
 		}
 	}
 }

@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.fathzer</groupId>
 		<artifactId>parent-pom</artifactId>
-		<version>1.0.5</version>
+		<version>1.0.6</version>
 	</parent>
 	<artifactId>plugin-loader</artifactId>
 	<version>0.0.2</version>
@@ -115,31 +115,8 @@
 				</executions>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.3.1</version>
-				<configuration>
-					<!-- see https://stackoverflow.com/questions/69320220/maven-javadoc-listed-classes-twice -->
-					<sourcepath>${basedir}/src/main/java</sourcepath>
-					<header>${project.version}</header>
-					<footer>${project.version}</footer>
-					<doclint>all</doclint>
-				</configuration>
-				<executions>
-					<execution>
-						<id>javadoc_generation</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>animal-sniffer-maven-plugin</artifactId>
-				<!-- managed 1.22 version does not ignores classes tagged to be ignored -->
-				<version>${animal-version}</version>
 				<configuration>
 					<signature>
 						<groupId>org.codehaus.mojo.signature</groupId>
