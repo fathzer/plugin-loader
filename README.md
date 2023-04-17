@@ -159,3 +159,5 @@ AbstractPluginsDownloader dl = new AbstractPluginsDownloader(URI.create("https:/
 ```
 
 You can then load the URI map using ```dl.getURIMap()```, or download jar plugins for some keys using ``̀ dl.download("sftp")```.
+
+AbstractPluginsDownloader has many protected methods. Feel free to override them to make this class fits with your needs.
