@@ -196,7 +196,7 @@ public abstract class AbstractPluginsDownloader {
 	 * @return A key to uri map.
 	 * @throws IOException If something went wrong
 	 */
-	protected Map<String, URI> getURIMap() throws IOException {
+	public Map<String, URI> getURIMap() throws IOException {
 		final HttpRequest request = getRepositoryRequestBuilder().build();
 		final HttpResponse<InputStream> response = call(request, BodyHandlers.ofInputStream());
 		if (response.statusCode()!=200) {

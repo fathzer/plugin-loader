@@ -8,10 +8,14 @@ A java plugin loader.
 
 ## Table of contents
 - [Introduction](#introduction)
+- [Requirements](#requirements)
 - [How to load plugins from jar files](#how-to-load-plugins-from-jar-files)
 - [How to load plugins from ClassLoader](#how-to-load-plugins-from-classloader)
 - [Working with custom plugins](#working-with-custom-plugins)
 - [A word about error management](#a-word-about-error-management)
+- [Advanced usage](#advanced-usage)
+  - [Plugin registry](#plugin-registry)
+  - [Download plugins from a repository](#download-plugins-from-a-repository)
 
 ## Introduction
 A plugin is a class that is loaded dynamically by an application to give extra functionalities or customization.
@@ -25,8 +29,9 @@ Unlike [java.util.ServiceLoader](https://docs.oracle.com/en/java/javase/11/docs/
 
 The [plugin-loader-example](https://github.com/fathzer/plugin-loader/tree/main/plugin-loader-example) folder contains an example of jar plugin implementation and loading.
 
+## Requirements
 It requires java 11+.  
-Nevertheless, a variant of this library is available for Java 8 users. They have to use the 'jdk8' [maven classifier](https://www.baeldung.com/maven-artifact-classifiers#bd-3-consuming-jar-artifact-of-a-specific-java-version) in their dependency. Only the com.fathzer.plugin.loader.utils.AbstractPluginDownloader class is not available in this variant.
+Nevertheless, a variant of this library is available for Java 8 users. They have to use the 'jdk8' [maven classifier](https://www.baeldung.com/maven-artifact-classifiers#bd-3-consuming-jar-artifact-of-a-specific-java-version) in their dependency. Only the [com.fathzer.plugin.loader.utils.AbstractPluginDownloader class](#download-plugins-from-a-repository) is not available in this variant.
 
 ## How to load plugins from jar files
 
@@ -71,6 +76,9 @@ final PluginLoader<Path> loader = new JarPluginLoader();
 final List<AppPlugin> plugins = loader.getPlugins(pluginFile, AppPlugin.class);
 ```
 
+An usual need is to load all plugins in a local directory.  
+*com.fathzer.loader.utils.FileUtils.getJarFiles* method allows you to search for jar files in a directory.  
+You have then to iterate over the returned files.
 
 ## How to load plugins from ClassLoader
 JarPluginLoader is not the only way to load plugins. *com.fathzer.plugin.loader.PluginLoader* is an abstract class that can have multiple implementations.  
@@ -112,9 +120,42 @@ loader.withInstanceBuilder(ib);
 If a problem occurs during plugin instantiation, a *PluginInstantiationException* is throw. This is the default behaviour, but you prefer to log the error and continue to instantiate other plugins contained in a jar.  
 You can simply customize the exception management using the *PluginLoader.withExceptionConsumer* method as in the following example:
 ```java
-new ClassLoaderPluginLoader().withExceptionConsumer(e -> log.warn("An error occured while loading plugins", e));
+new ClassLoaderPluginLoader().withExceptionConsumer(e -> log.warn("An error occurred while loading plugins", e));
 ```
 
-#TODO
-- Get jar files in a directory
-- Plugin registry
+## Advanced usage
+An usual need is to have a bunch of plugins that are selected by a key. For instance, you can imagine an interface that do *something* with an URI. You can have multiple implementations of the interface, one for each supported uri scheme.
+
+### Plugin registry
+The *com.fathzer.loader.utils.PluginRegistry* maps String keys to plugin instantiations. You can register plugins, then retrieve them from their keys, , etc...
+
+### Download plugins from a repository
+**Warning: This section is not available for java8 version of this library**.
+
+Once you have a plugin registry, a basic way to populate it is to read plugins from a local jar directory.  
+It's simple ... but how to update this local directory when a new plugin is released?  
+
+The *com.fathzer.plugin.loader.utils.AbtractPluginDownloader* class allows you to define your own plugin remote repository and download the required jar to a local folder.  
+You can then use JarPluginLoader to load these plugins.
+
+A repository is basically a map between a key and an URI where to download a jar.  
+This map should be available at an URI. Let's say for instance *https://com.myApp/AppPluginRepository*.  
+The format of serialization format of the map is free. The AbtractPluginDownloader is abstract because you have to implement the parsing of the repository URI. For the example, let say the map is stored in json format:
+```json
+{
+  "https":"https://com.myApp/AppPlugins/http.jar",
+  "sftp":"https://com.myApp/AppPlugins/sftp.jar"
+}
+```
+
+Here is an implementation that uses jackson to parse the map:
+```java
+AbstractPluginsDownloader dl = new AbstractPluginsDownloader(URI.create("https://com.myApp/AppPluginRepository"), Paths.get("Plugins")) {
+  @Override
+  protected Map<String, URI> getURIMap(InputStream in) throws IOException {
+    return new ObjectMapper().readValue(in, new TypeReference<HashMap<String, URI>>() {});
+  }
+};
+```
+
+You can then load the URI map using ```dl.getURIMap()```, or download jar plugins for some keys using ``̀ dl.download("sftp")```.
