@@ -8,7 +8,7 @@
 		<version>1.0.6</version>
 	</parent>
 	<artifactId>plugin-loader</artifactId>
-	<version>0.0.2</version>
+	<version>0.0.3</version>
 
 	<name>plugin-loader</name>
 	<description>A java plugin loader.</description>
@@ -123,7 +123,6 @@
 						<artifactId>java18</artifactId>
 						<version>1.0</version>
 					</signature>
-					<ignores>/home/jma/git/plugin-loader/src/main/java/com/fathzer/plugin/loader/utils/AbstractPluginsDownloader.java</ignores>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -128,7 +128,7 @@ public abstract class AbstractPluginsDownloader {
 		for (URI current : toDownload) {
 			final Path file = getDownloadTarget(current);
 			paths.add(file);
-			if (shouldLoad(uri, file)) {
+			if (shouldLoad(current, file)) {
 				downloadFile(current, file);
 			}
 		}

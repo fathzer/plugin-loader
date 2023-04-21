@@ -12,6 +12,7 @@ import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -240,6 +241,20 @@ class AbstractPluginsDownloaderTest {
 		final Path path3 = downloader.getDownloadTarget(missingURI);
 		assertThrows(IOException.class, ()->downloader.downloadFile(missingURI, path3));
 		assertFalse(Files.isRegularFile(path3));
+	}
+	
+	@Test
+	void testShouldLoadHaveCorrectArguments(@TempDir Path dir) throws IOException {
+		// Was a bug in 0.0.2 where first arg was not the expected URI
+		final AbstractPluginsDownloader downloader = new TestPluginDownloader(server.url(REPOSITORY_PATH).uri(), dir) {
+			@Override
+			protected boolean shouldLoad(URI uri, Path path) {
+				assertEquals(getUri().resolve(PLUGINS_JAR_URI_PATH), uri);
+				assertEquals(getDownloadTarget(uri), path);
+				return false;
+			}
+		};
+		assertEquals(1,downloader.download(VALID_PLUGIN_KEY).size());
 	}
 
 	private void clearRequests() throws InterruptedException {
